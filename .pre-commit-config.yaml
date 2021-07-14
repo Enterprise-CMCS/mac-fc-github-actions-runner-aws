@@ -1,0 +1,23 @@
+repos:
+  - repo: git://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: trailing-whitespace
+
+  - repo: git://github.com/igorshubovych/markdownlint-cli
+    rev: v0.26.0
+    hooks:
+      - id: markdownlint
+
+  - repo: https://github.com/pryorda/dockerfilelint-precommit-hooks
+    rev: v0.1.0
+    hooks:
+      - id: dockerfilelint
+        stages: [commit]
+
+  - repo: git://github.com/detailyang/pre-commit-shell
+    rev: 1.0.5
+    hooks:
+      - id: shell-lint
