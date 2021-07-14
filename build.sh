@@ -1,14 +1,20 @@
-#!/bin/sh
+#!/bin/bash
 set -ex
 
-# install dependencies. config.sh uses bash
+# install dependencies
 apt-get update
-apt-get -qq -y install --no-install-recommends ca-certificates curl tar
+apt-get -qq -y install --no-install-recommends \
+    ca-certificates curl tar git \
+    libyaml-dev build-essential jq
 
-mkdir actions-runner && cd actions-runner
+mkdir actions-runner
+cd actions-runner
 
+# Download the latest runner package
 curl -o actions-runner-linux-x64-2.278.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.278.0/actions-runner-linux-x64-2.278.0.tar.gz
-tar xzf ./actions-runner-linux-x64-2.278.0.tar.gz
-./bin/installdependencies.sh
 
-RUNNER_ALLOW_RUNASROOT="1" ./config.sh --url ${REPOSITORY} --token ${REPOSITORY_TOKEN}
+# Extract installer 
+tar xzf ./actions-runner-linux-x64-2.278.0.tar.gz
+
+# Install .Net Core 3.x Linux Dependencies
+./bin/installdependencies.sh
