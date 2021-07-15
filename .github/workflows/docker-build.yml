@@ -2,7 +2,7 @@ name: docker-build
 
 on:
   push:
-    branches: [main, create-runner-image]
+    branches: [main]
   # Also trigger on release created event
   release:
     types: [published]
