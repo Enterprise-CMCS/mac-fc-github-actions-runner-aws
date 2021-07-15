@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 
-ARG RUNUSER=default
-ARG RUNGROUP=default
+ARG RUNUSER=runner
+ARG RUNGROUP=runner
 
 COPY build.sh /tmp
 
