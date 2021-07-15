@@ -1,17 +1,20 @@
 #!/bin/bash
 set -ex
 
+cd actions-runner
+mkdir work-dir
+
+# set personal access token, owner, and repo. to be configured
 GITHUB_TOKEN=#removed
 OWNER=chtakahashi
 REPO=testing-self-hosted-runners
 
+# Grab a runner registration token
 REGISTRATION_TOKEN=$(curl -s -X POST \
     -H "Authorization: token ${GITHUB_TOKEN}" \
     "https://api.github.com/repos/${OWNER}/${REPO}/actions/runners/registration-token" | jq -r .token)
 
-cd "/home/default/actions-runner"
-mkdir work-dir
-
+# Register the runner
 ./config.sh \
       --unattended \
       --url "https://github.com/${OWNER}/${REPO}" \
@@ -31,5 +34,6 @@ cleanup() {
   rm -rf work-dir
 }
 
+# Run cleanup upon exit. exit upon one job ran
 trap cleanup EXIT
 ./run.sh --once

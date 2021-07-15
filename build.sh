@@ -23,5 +23,3 @@ tar xzf ./actions-runner-linux-x64-2.278.0.tar.gz
 
 # give directory and file ownership to our user
 chown -R "${RUNUSER}":"${RUNGROUP}" "/home/${RUNUSER}"
-
-# clean up
