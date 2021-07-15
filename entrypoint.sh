@@ -1,11 +1,11 @@
 #!/bin/bash
 set -ex
 
-cd actions-runner
 mkdir work-dir
+cd actions-runner
 
 # set personal access token, owner, and repo. to be configured
-GITHUB_TOKEN=#removed
+GITHUB_TOKEN=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
 OWNER=chtakahashi
 REPO=testing-self-hosted-runners
 
@@ -20,7 +20,7 @@ REGISTRATION_TOKEN=$(curl -s -X POST \
       --url "https://github.com/${OWNER}/${REPO}" \
       --token "${REGISTRATION_TOKEN}" \
       --name "TEST_RUNNER" \
-      --work /work-dir \
+      --work ../work-dir \
       --replace
 
 cleanup() {
@@ -31,7 +31,7 @@ cleanup() {
   ./config.sh remove --token "${REGISTRATION_TOKEN}"
 
   # Remove our runner work dir to clean up after ourselves
-  rm -rf work-dir
+  rm -rf ../work-dir
 }
 
 # Run cleanup upon exit. exit upon one job ran
