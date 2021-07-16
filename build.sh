@@ -7,9 +7,12 @@ apt-get -qq -y install --no-install-recommends \
     ca-certificates curl tar git \
     libyaml-dev build-essential jq
 
-# Install our user and create directory to install actions-runner
+# Install our user and create directory to install actions-runner and the hostedtoolcache
 addgroup --gid 1000 "${RUNGROUP}" && adduser --uid 1000 --ingroup "${RUNGROUP}" --shell /bin/bash "${RUNUSER}"
 mkdir -p "/home/${RUNUSER}/actions-runner"
+mkdir -p "/opt/hostedtoolcache"
+
+# These steps are straight from the github runner installation guide when attempting to add a runner to a repository
 cd "/home/${RUNUSER}/actions-runner"
 
 # Download the latest runner package
@@ -21,5 +24,6 @@ tar xzf ./actions-runner-linux-x64-2.278.0.tar.gz
 # Install .Net Core 3.x Linux Dependencies
 ./bin/installdependencies.sh
 
-# give directory and file ownership to our user
+# give privileges to our user
+chown -R "${RUNUSER}":"${RUNGROUP}" "/opt/hostedtoolcache"
 chown -R "${RUNUSER}":"${RUNGROUP}" "/home/${RUNUSER}"
