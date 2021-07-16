@@ -1,11 +1,14 @@
 # github-actions-runner-aws
 
 ## About
+
 This repository contains the Dockerfile for a self-hosted GitHub Actions runner and an associated Terraform module which can be run in your environment to provision:
+
 * An ECR repository to which you can push images of your runner
 * **(WIP)** An ECS cluster and ECS Fargate task definition to spin up an instance of this runner *per job* in your GitHub Actions workflow.
 
 ## Set Up
+
 1. Fork this repository.
 2. Set up an IAM user in AWS with the necessary permissions to support the docker-build.yml workflow script included. Refer to [this ticket](https://jiraent.cms.gov/browse/CLDSPT-3127) for a previous implementation.
     * Once you have your user, be sure to populate your repository secrets with its access keys
@@ -17,6 +20,7 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 To be populated with more details on how to get this operationalized via ECS/Fargate.
 
 ## Local Usage for Testing
+
 1. Clone this repository to your machine.
 2. Populate the `entrypoint.sh` script with your GitHub personal access token, the repository owner, and repository name.
 3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
