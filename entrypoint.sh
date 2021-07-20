@@ -4,6 +4,11 @@ set -ex
 mkdir work-dir
 cd actions-runner
 
+# set personal access token, owner, and repo. to be configured via ECS task def
+GITHUB_TOKEN=$PERSONAL_ACCESS_TOKEN
+OWNER=$REPO_OWNER
+REPO=$REPO_NAME
+
 # Grab a runner registration token
 REGISTRATION_TOKEN=$(curl -s -X POST \
     -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" \
