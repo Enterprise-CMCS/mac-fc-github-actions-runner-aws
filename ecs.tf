@@ -105,7 +105,8 @@ resource "aws_security_group_rule" "app_ecs_allow_outbound" {
   cidr_blocks = ["0.0.0.0/0"]
 }
 
-## ECS task
+## ECS schedule task
+
 # Allows CloudWatch Rule to run ECS Task
 
 data "aws_iam_policy_document" "cloudwatch_target_role_policy_doc" {
@@ -134,22 +135,22 @@ resource "aws_iam_role_policy" "cloudwatch_target_role_policy" {
 
 resource "aws_iam_role_policy_attachment" "read_only_everything" {
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
-  role       = aws_iam_role.task_execution_role.name
+  role       = aws_iam_role.task_role.name
 }
 
-resource "aws_iam_role" "task_execution_role" {
+resource "aws_iam_role" "task_role" {
   name               = "ecs-task-role-${var.app_name}-${var.environment}-${var.task_name}"
-  description        = "Role allowing ECS tasks to execute"
+  description        = "Role allowing container definition to execute"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume_role_policy.json
 }
 
-resource "aws_iam_role_policy" "task_execution_role_policy" {
-  name   = "${aws_iam_role.task_execution_role.name}-policy"
-  role   = aws_iam_role.task_execution_role.name
-  policy = data.aws_iam_policy_document.task_execution_role_policy_doc.json
+resource "aws_iam_role_policy" "task_role_policy" {
+  name   = "${aws_iam_role.task_role.name}-policy"
+  role   = aws_iam_role.task_role.name
+  policy = data.aws_iam_policy_document.task_role_policy_doc.json
 }
 
-data "aws_iam_policy_document" "task_execution_role_policy_doc" {
+data "aws_iam_policy_document" "task_role_policy_doc" {
   statement {
     actions = [
       "logs:CreateLogStream",
@@ -182,8 +183,8 @@ data "aws_iam_policy_document" "task_execution_role_policy_doc" {
       "secretsmanager:GetSecretValue",
     ]
     resources = [
+      var.personal_access_token_arn,
       "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:/${var.app_name}-${var.environment}*",
-      var.personal_access_token_arn
     ]
   }
 
@@ -198,28 +199,17 @@ data "aws_iam_policy_document" "task_execution_role_policy_doc" {
   }
 }
 
-# ECS service details
-
-resource "aws_ecs_service" "github_actions_job" {
-  name            = "actions-runner"
-  cluster         = var.ecs_cluster_arn
-  task_definition =  aws_ecs_task_definition.runner_def.arn
-  network_configuration {
-    subnets = var.ecs_subnet_ids
-  }
-  launch_type = "FARGATE"
-  desired_count = 1
-}
+# ECS task details
 
 resource "aws_ecs_task_definition" "runner_def" {
   family        = "${var.app_name}-${var.environment}-${var.task_name}"
   network_mode  = "awsvpc"
-  task_role_arn = aws_iam_role.task_execution_role.arn
+  task_role_arn = aws_iam_role.task_role.arn
 
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "1024"
-  execution_role_arn       = join("", aws_iam_role.task_execution_role.*.arn)
+  execution_role_arn       = join("", aws_iam_role.task_role.*.arn)
 
   container_definitions = templatefile("${path.module}/container-definitions.tpl",
     {

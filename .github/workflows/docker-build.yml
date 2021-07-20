@@ -2,7 +2,7 @@ name: docker-build
 
 on:
   push:
-    branches: [main]
+    branches: [main, create-ecs-task]
   # Also trigger on release created event
   release:
     types: [published]
