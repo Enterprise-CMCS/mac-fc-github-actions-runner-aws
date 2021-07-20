@@ -1,9 +1,4 @@
-output "ecr_arn" {
-  description = "Full ARN of the repository."
-  value       = aws_ecr_repository.main.arn
-}
-
-output "ecr_repo_url" {
-  description = "The URL for the image created."
-  value       = aws_ecr_repository.main.repository_url
+output "security_group_id" {
+  description = "The ID of the security group created."
+  value       = aws_security_group.ecs_sg.id
 }
