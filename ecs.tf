@@ -238,5 +238,6 @@ resource "aws_ecs_service" "actions-runner" {
   desired_count = 1
   network_configuration {
     subnets = [for s in var.ecs_subnet_ids: s]
+    security_groups = [aws_security_group.ecs_sg.id]
   }
 }

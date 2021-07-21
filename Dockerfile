@@ -3,6 +3,8 @@ FROM ubuntu:18.04
 ARG RUNUSER=runner
 ARG RUNGROUP=runner
 
+ARG ACTIONS_VERSION="2.278.0"
+
 COPY build.sh /tmp
 
 RUN /tmp/build.sh
