@@ -105,6 +105,15 @@ resource "aws_security_group_rule" "app_ecs_allow_outbound" {
   cidr_blocks = ["0.0.0.0/0"]
 }
 
+resource "aws_security_group_rule" "allow_self" {
+  type              = "ingress"
+  to_port           = -1
+  from_port         = -1
+  protocol          = "all"
+  security_group_id = aws_security_group.ecs_sg.id
+  self              = true
+}
+
 ## ECS schedule task
 
 # Allows CloudWatch Rule to run ECS Task
@@ -131,11 +140,6 @@ resource "aws_iam_role_policy" "cloudwatch_target_role_policy" {
   name   = "${aws_iam_role.cloudwatch_target_role.name}-policy"
   role   = aws_iam_role.cloudwatch_target_role.name
   policy = data.aws_iam_policy_document.cloudwatch_target_role_policy_doc.json
-}
-
-resource "aws_iam_role_policy_attachment" "read_only_everything" {
-  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
-  role       = aws_iam_role.task_role.name
 }
 
 resource "aws_iam_role" "task_role" {
@@ -183,7 +187,6 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
       "secretsmanager:GetSecretValue",
     ]
     resources = [
-      var.personal_access_token_arn,
       "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:/${var.app_name}-${var.environment}*",
     ]
   }
@@ -194,7 +197,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
     ]
 
     resources = [
-      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.app_name}-${var.environment}*",
+      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.app_name}-${var.environment}/*"
     ]
   }
 }
@@ -209,7 +212,7 @@ resource "aws_ecs_task_definition" "runner_def" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "1024"
-  execution_role_arn       = join("", aws_iam_role.task_role.*.arn)
+  execution_role_arn       = aws_iam_role.task_role.arn
 
   container_definitions = templatefile("${path.module}/container-definitions.tpl",
     {
@@ -225,4 +228,15 @@ resource "aws_ecs_task_definition" "runner_def" {
       repo_name = var.repo_name
     }
   )
+}
+
+resource "aws_ecs_service" "actions-runner" {
+  name = "github-actions-runner"
+  cluster = var.ecs_cluster_arn
+  task_definition = aws_ecs_task_definition.runner_def.arn
+  launch_type = "FARGATE"
+  desired_count = 1
+  network_configuration {
+    subnets = [for s in var.ecs_subnet_ids: s]
+  }
 }
