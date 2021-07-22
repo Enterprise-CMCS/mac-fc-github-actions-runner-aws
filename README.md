@@ -22,6 +22,14 @@ To be populated with more details on how to get this operationalized via ECS/Far
 ## Local Usage for Testing
 
 1. Clone this repository to your machine.
-2. Populate the `entrypoint.sh` script with your GitHub personal access token, the repository owner, and repository name.
+2. Ensure your environment variables are populated: 
+    * `PERSONAL_ACCESS_TOKEN` - Your github personal access token with repository permissions.
+        * Go to Settings > Developer Settings > Personal Access Token, and click on **Generate new token**
+        ![Where to Generate a New Token](./GitHubPAT.png)
+        * Give your token a note and check the box to give full control of private repositories
+        ![Repository Permissions](./GitHubPAT2.png)
+        * Once generated, be sure to save your token in a secure location such as 1pass or AWS Secrets Manager
+    * `REPO_OWNER` - The name of the repository owner, e.g. `CMSgov`
+    * `REPO_NAME` - The name of the repository
 3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
 4. In one of the workflows in the target repository, change the `runs-on` value to `self-hosted`. This will make the workflow use the registered self-hosted runner to complete its task, after which it will shut down.
