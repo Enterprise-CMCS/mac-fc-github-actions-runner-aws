@@ -19,10 +19,10 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 **(WIP)**
 To be populated with more details on how to get this operationalized via ECS/Fargate.
 
-## Local Usage for Testing
+## Local Usage
 
 1. Clone this repository to your machine.
-2. Ensure your environment variables are populated: 
+2. Ensure your environment variables are populated:
     * `PERSONAL_ACCESS_TOKEN` - Your github personal access token with repository permissions.
         * Go to Settings > Developer Settings > Personal Access Token, and click on **Generate new token**
         ![Where to Generate a New Token](./GitHubPAT.png)
