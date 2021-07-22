@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {
+      "action": {
+        "type": "expire"
+      },
+      "description": "Keep last 500 images",
+      "rulePriority": 10,
+      "selection": {
+        "countNumber": 500,
+        "countType": "imageCountMoreThan",
+        "tagStatus": "any"
+      }
+    }
+  ]
+}
