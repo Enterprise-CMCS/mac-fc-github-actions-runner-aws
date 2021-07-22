@@ -197,7 +197,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
     ]
 
     resources = [
-      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.app_name}-${var.environment}/*"
+      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.app_name}-${var.environment}*"
     ]
   }
 }
