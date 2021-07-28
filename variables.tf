@@ -71,10 +71,10 @@ variable "logs_cloudwatch_group_arn" {
   type        = string
 }
 
-variable "ecs_cluster_arn" {
-  description = "ECS cluster ARN to use for running this profile"
-  type        = string
-}
+# variable "ecs_cluster_arn" {
+#   description = "ECS cluster ARN to use for running this profile"
+#   type        = string
+# }
 
 # GitHub Runner Variables
 

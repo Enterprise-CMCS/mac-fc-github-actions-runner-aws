@@ -204,6 +204,18 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 
 # ECS task details
 
+resource "aws_ecs_cluster" "github-runner" {
+  name = var.app_name
+
+  tags = {
+    Environment = var.environment
+    Automation  = "Terraform"
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 resource "aws_ecs_task_definition" "runner_def" {
   family        = "${var.app_name}-${var.environment}-${var.task_name}"
   network_mode  = "awsvpc"
@@ -232,7 +244,7 @@ resource "aws_ecs_task_definition" "runner_def" {
 
 resource "aws_ecs_service" "actions-runner" {
   name = "github-actions-runner"
-  cluster = var.ecs_cluster_arn
+  cluster = aws_ecs_cluster.github-runner.arn
   task_definition = aws_ecs_task_definition.runner_def.arn
   launch_type = "FARGATE"
   desired_count = 1
