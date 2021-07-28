@@ -1,5 +1,7 @@
 locals {
   awslogs_group    = split(":", var.logs_cloudwatch_group_arn)[6]
+  cluster_name     = "${var.ecs_cluster_arn != "" ? var.ecs_cluster_arn : aws_ecs_cluster.github-runner.arn}"
+  cluster_provided = "${var.ecs_cluster_arn != "" ? 1 : 0}"
 }
 
 data "aws_caller_identity" "current" {}
@@ -205,6 +207,8 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 # ECS task details
 
 resource "aws_ecs_cluster" "github-runner" {
+  count = local.cluster_provided ? 0 : 1
+
   name = var.app_name
 
   tags = {
@@ -244,7 +248,7 @@ resource "aws_ecs_task_definition" "runner_def" {
 
 resource "aws_ecs_service" "actions-runner" {
   name = "github-actions-runner"
-  cluster = aws_ecs_cluster.github-runner.arn
+  cluster = local.cluster_name
   task_definition = aws_ecs_task_definition.runner_def.arn
   launch_type = "FARGATE"
   desired_count = 1
