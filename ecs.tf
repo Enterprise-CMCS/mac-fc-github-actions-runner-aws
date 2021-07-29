@@ -1,7 +1,7 @@
 locals {
   awslogs_group    = split(":", var.logs_cloudwatch_group_arn)[6]
-  cluster_name     = "${var.ecs_cluster_arn != "" ? var.ecs_cluster_arn : aws_ecs_cluster.github-runner.arn}"
-  cluster_provided = "${var.ecs_cluster_arn != "" ? 1 : 0}"
+  cluster_arn      = var.ecs_cluster_arn != "" ? var.ecs_cluster_arn : aws_ecs_cluster.github-runner[0].arn
+  cluster_provided = var.ecs_cluster_arn != "" ? true : false
 }
 
 data "aws_caller_identity" "current" {}
@@ -248,8 +248,8 @@ resource "aws_ecs_cluster" "github-runner" {
 
 resource "aws_ecs_service" "actions-runner" {
   name = "github-actions-runner"
-  cluster = local.cluster_name
-  task_definition = aws_ecs_task_definition.runner_def.arn
+  cluster = local.cluster_arn
+  # task_definition = aws_ecs_task_definition.runner_def.arn
   launch_type = "FARGATE"
   network_configuration {
     subnets = [for s in var.ecs_subnet_ids: s]
