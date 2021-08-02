@@ -13,14 +13,16 @@ jobs:
       - name: Set release version and current version variables
         id: get-versions
         run: |
-          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name[1:] | tostring")
           echo ::set-output name=current_tag::$(grep ACTIONS_VERSION Dockerfile | cut -d'=' -f 2)
+          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name[1:] | tostring")
       - name: Create new branch
-        if: ${{ steps.get-versions.outputs.release_tag == steps.get-versions.outputs.current_tag}}
-        run: echo 'Hello World'
-      # - name: Change release version in Dockerfile
-      #   id: update-version
-      #   env:
-      #     NEW_VERSION: ${{ steps.get-current-version.outputs.release_tag }}
-      #   run: |
-      #     sed -ie 's,ACTIONS_VERSION='".*"',ACTIONS_VERSION="'"$NEW_VERSION"'",g' Dockerfile
+        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag}}
+        run: git checkout -b update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
+      - name: Change release version in Dockerfile
+        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag}}
+        id: update-version
+        env:
+          OLD_VERSION: ${{ steps.get-current-version.outputs.current_tag }}
+          NEW_VERSION: ${{ steps.get-current-version.outputs.release_tag }}
+        run: |
+          sed -ie 's,"'"$OLD_VERSION"'","'"$NEW_VERSION"'",g' Dockerfile
