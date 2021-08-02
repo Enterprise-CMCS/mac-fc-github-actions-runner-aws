@@ -11,9 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set release version and current version variables
-        id: get-current-version
+        id: get-versions
         run: |
-          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq '.[1:]' -r ".tag_name")
+          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name[1:] | tostring")
+          echo ::set-output name=current_tag::$(grep ACTIONS_VERSION Dockerfile | cut -d'=' -f 2)
+      - name: Create new branch
+        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag}}
+        run: echo 'Hello World'
       # - name: Change release version in Dockerfile
       #   id: update-version
       #   env:
