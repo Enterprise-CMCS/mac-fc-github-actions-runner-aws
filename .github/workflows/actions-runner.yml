@@ -11,11 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set release version and current version variables
-        id: versions
+        id: get-current-version
         run: |
-          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name")
-          echo ::set-output name=current_tag::$(<actions-runner.version)
-      - name: Set actions-runner version to the new version
-        if: steps.versions.outputs.release_tag != steps.versions.outputs.current_tag
-          echo ${{ steps.versions.outputs.release_tag }} > actions-runner.version
-        run: echo 'success'
+          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq '.[1:]' -r ".tag_name")
+      # - name: Change release version in Dockerfile
+      #   id: update-version
+      #   env:
+      #     NEW_VERSION: ${{ steps.get-current-version.outputs.release_tag }}
+      #   run: |
+      #     sed -ie 's,ACTIONS_VERSION='".*"',ACTIONS_VERSION="'"$NEW_VERSION"'",g' Dockerfile
