@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install jq
-        run: apt-get install jq
+      # - name: Install jq
+        # run: apt-get -y install --no-install-recommends jq
       - name: Get release get-version
-        run: curl -sL https://api.github.com/repos/actions/runner/releases/latest | \
-          jq -r ".tag_name"
+        run: curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name"
