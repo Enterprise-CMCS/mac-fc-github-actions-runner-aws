@@ -18,3 +18,4 @@ jobs:
       - name: Set actions-runner version to the new version
         if: steps.versions.outputs.release_tag != steps.versions.outputs.current_tag
           echo ${{ steps.versions.outputs.release_tag }} > actions-runner.version
+        run: echo 'success'
