@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Get release version
+      - name: Set release version and current version variables
+        id: versions
         run: |
           echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name")
           echo ::set-output name=current_tag::$(<actions-runner.version)
-          echo $release_tag
-          echo $current_tag
+      - name: Set actions-runner version to the new version
+        if: steps.versions.outputs.release_tag != steps.versions.outputs.current_tag
+          echo ${{ steps.versions.outputs.release_tag }} > actions-runner.version
