@@ -1,0 +1,15 @@
+name: Get latest GitHub Actions Runner
+
+on:
+  # schedule:
+  #   - cron: '30 9 * * *'
+  push:
+    branches: [workflow-runner-update]
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get release get-version
+        run: curl -sL https://api.github.com/repos/actions/runner/releases/latest | \
+          jq -r ".tag_name"
