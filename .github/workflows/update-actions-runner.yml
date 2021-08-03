@@ -26,3 +26,18 @@ jobs:
           NEW_VERSION: ${{ steps.get-current-version.outputs.release_tag }}
         run: |
           sed -ie 's,"'"$OLD_VERSION"'","'"$NEW_VERSION"'",g' Dockerfile
+      - name: set up Git
+        env:
+          GITHUB_TOKEN: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
+          GITHUB_ACTOR_NAME: "@robot-mac-fc"
+          GITHUB_ACTOR_EMAIL: "robot-mac-fc@users.noreply.github.com"
+        run: |
+          git config --global user.name "${GITHUB_ACTOR_NAME}"
+          git config --global user.email "${GITHUB_ACTOR_EMAIL}"
+      - name: commit and push changes
+        run: |
+          git add .
+          if output=$(git status --porcelain) && [ ! -z "$output" ]; then
+            git commit -m 'Update version'
+            git push
+          fi
