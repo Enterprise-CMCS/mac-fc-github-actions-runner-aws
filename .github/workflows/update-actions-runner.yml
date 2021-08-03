@@ -18,9 +18,9 @@ jobs:
         run: |
           echo ::set-output name=current_tag::$(grep ACTIONS_VERSION Dockerfile | cut -d'=' -f 2 | sed -e 's/^"//' -e 's/"$//')
           echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name[1:] | tostring")
-      - name: Create new branch
-        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
-        run: git checkout -b update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
+      # - name: Create new branch
+      #   if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
+      #   run: git checkout -b update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
       - name: Change release version in Dockerfile
         if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
         id: update-version
@@ -38,20 +38,19 @@ jobs:
         run: |
           git config --global user.name "${GITHUB_ACTOR_NAME}"
           git config --global user.email "${GITHUB_ACTOR_EMAIL}"
-      - name: commit and push changes
-        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
-        run: |
-          git add Dockerfile
-          if output=$(git status --porcelain) && [ ! -z "$output" ]; then
-            git commit -m 'Update version'
-          fi
+      # - name: commit and push changes
+      #   if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
+      #   run: |
+      #     git add Dockerfile
+      #     if output=$(git status --porcelain) && [ ! -z "$output" ]; then
+      #       git commit -m 'Update version'
+      #     fi
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
           commit-message: Update actions runner to new version
           author: ${GITHUB_ACTOR_NAME} <${GITHUB_ACTOR_EMAIL}>
+          branch: update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
           delete-branch: true
           title: Update Actions Runner Version to ${{ steps.get-versions.outputs.release_tag }}
-          base: main
-          branch: update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
