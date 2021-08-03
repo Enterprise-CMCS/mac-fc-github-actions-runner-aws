@@ -55,3 +55,4 @@ jobs:
           branch: update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
           delete-branch: true
           title: Update Actions Runner Version to ${{ steps.get-versions.outputs.release_tag }}
+          reviewers: chtakahashi, LinuxBozo, lxuo-trussworks, dynamike
