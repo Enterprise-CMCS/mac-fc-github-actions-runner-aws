@@ -25,8 +25,9 @@ jobs:
           OLD_VERSION: ${{ steps.get-current-version.outputs.current_tag }}
           NEW_VERSION: ${{ steps.get-current-version.outputs.release_tag }}
         run: |
-          sed -ie 's,"'"$OLD_VERSION"'","'"$NEW_VERSION"'",g' Dockerfile
+          sed -i --expression='s,"'"$OLD_VERSION"'","'"$NEW_VERSION"'",g' Dockerfile
       - name: set up Git
+        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag}}
         env:
           GITHUB_TOKEN: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
           GITHUB_ACTOR_NAME: "@robot-mac-fc"
@@ -35,8 +36,9 @@ jobs:
           git config --global user.name "${GITHUB_ACTOR_NAME}"
           git config --global user.email "${GITHUB_ACTOR_EMAIL}"
       - name: commit and push changes
+        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag}}
         run: |
-          git add .
+          git add Dockerfile
           if output=$(git status --porcelain) && [ ! -z "$output" ]; then
             git commit -m 'Update version'
             git push --set-upstream origin update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
