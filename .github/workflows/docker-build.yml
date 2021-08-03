@@ -1,15 +1,12 @@
 name: docker-build
 
-on:
-  push:
-    branches: [main]
-  # Also trigger on release created event
-  release:
-    types: [published]
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DO_DEPLOY: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v2
       - name: Create env var for docker tag
@@ -31,7 +28,19 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: docker build . --file Dockerfile --tag $ECR_REGISTRY/$ECR_REPOSITORY:${TAG} --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest --tag $ECR_REGISTRY/$ECR_REPOSITORY:${HASH}
-      - name: Push docker image to Amazon ECR
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        with:
+          image-ref: '${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:${{env.HASH}}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+      - name: Push docker image to Amazon ECR with all tags
+        if: ${{ fromJSON(env.DO_DEPLOY) }}
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
