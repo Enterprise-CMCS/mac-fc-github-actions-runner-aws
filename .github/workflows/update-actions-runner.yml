@@ -46,6 +46,7 @@ jobs:
       #       git commit -m 'Update version'
       #     fi
       - name: Create Pull Request
+        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
