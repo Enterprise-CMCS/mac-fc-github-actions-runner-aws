@@ -22,8 +22,8 @@ jobs:
         if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag}}
         id: update-version
         env:
-          OLD_VERSION: ${{ steps.get-current-version.outputs.current_tag }}
-          NEW_VERSION: ${{ steps.get-current-version.outputs.release_tag }}
+          OLD_VERSION: ${{ steps.get-versions.outputs.current_tag }}
+          NEW_VERSION: ${{ steps.get-versions.outputs.release_tag }}
         run: |
           sed -i --expression='s,"'"$OLD_VERSION"'","'"$NEW_VERSION"'",g' Dockerfile
       - name: set up Git
