@@ -54,3 +54,4 @@ jobs:
           author: ${GITHUB_ACTOR_NAME} <${GITHUB_ACTOR_EMAIL}>
           delete-branch: true
           title: Update Actions Runner Version to ${{ steps.get-versions.outputs.release_tag }}
+          base: main
