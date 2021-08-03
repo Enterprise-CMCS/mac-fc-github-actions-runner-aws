@@ -39,5 +39,5 @@ jobs:
           git add .
           if output=$(git status --porcelain) && [ ! -z "$output" ]; then
             git commit -m 'Update version'
-            git push
+            git push --set-upstream origin update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
           fi
