@@ -77,6 +77,11 @@ variable "logs_cloudwatch_group_arn" {
    default     = ""
  }
 
+ variable "ecs_desired_count" {
+   description = "Desired task count for ECS service"
+   type        = number
+ }
+
 # GitHub Runner Variables
 
 variable "personal_access_token_arn" {

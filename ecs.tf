@@ -44,12 +44,6 @@ data "aws_iam_policy_document" "cloudwatch_logs_allow_kms" {
   }
 }
 
-# Create a data source to pull the latest active revision from
-# data "aws_ecs_task_definition" "runner_def" {
-#   task_definition = aws_ecs_task_definition.runner_def.family
-#   depends_on      = [aws_ecs_task_definition.runner_def] # ensures at least one task def exists
-# }
-
 # Assume Role policies
 
 data "aws_partition" "current" {}
@@ -220,36 +214,10 @@ resource "aws_ecs_cluster" "github-runner" {
   }
 }
 
-# resource "aws_ecs_task_definition" "runner_def" {
-#   family        = "${var.app_name}-${var.environment}-${var.task_name}"
-#   network_mode  = "awsvpc"
-#   task_role_arn = aws_iam_role.task_role.arn
-
-#   requires_compatibilities = ["FARGATE"]
-#   cpu                      = "256"
-#   memory                   = "1024"
-#   execution_role_arn       = aws_iam_role.task_role.arn
-
-#   container_definitions = templatefile("${path.module}/container-definitions.tpl",
-#     {
-#       app_name = var.app_name,
-#       environment = var.environment,
-#       task_name = var.task_name,
-#       repo_url = aws_ecr_repository.main.repository_url,
-#       repo_tag = var.repo_tag,
-#       awslogs_group = local.awslogs_group,
-#       awslogs_region = data.aws_region.current.name,
-#       personal_access_token_arn = var.personal_access_token_arn,
-#       repo_owner = var.repo_owner,
-#       repo_name = var.repo_name
-#     }
-#   )
-# }
-
 resource "aws_ecs_service" "actions-runner" {
   name = "github-actions-runner"
   cluster = local.cluster_arn
-  # task_definition = aws_ecs_task_definition.runner_def.arn
+  desired_count = var.ecs_desired_count
   launch_type = "FARGATE"
   network_configuration {
     subnets = [for s in var.ecs_subnet_ids: s]
