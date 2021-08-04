@@ -1,20 +1,25 @@
 locals {
-  awslogs_group    = split(":", var.logs_cloudwatch_group_arn)[6]
+    awslogs_group    = split(":", var.logs_cloudwatch_group_arn)[6]
   cluster_arn      = var.ecs_cluster_arn != "" ? var.ecs_cluster_arn : aws_ecs_cluster.github-runner[0].arn
   cluster_provided = var.ecs_cluster_arn != "" ? true : false
 }
+
+
+data "aws_partition" "current" {}
+
+data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "cloudwatch_logs_allow_kms" {
   statement {
-    sid    = "Enable IAM User Permissions"
+    sid    = "Allow IAM user KMS access"
     effect = "Allow"
 
     principals {
       type = "AWS"
       identifiers = [
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+        "arn:${data.aws_partition.current.partition}::${data.aws_caller_identity.current.account_id}:root",
       ]
     }
 
@@ -46,10 +51,6 @@ data "aws_iam_policy_document" "cloudwatch_logs_allow_kms" {
 
 # Assume Role policies
 
-data "aws_partition" "current" {}
-
-data "aws_region" "current" {}
-
 data "aws_iam_policy_document" "ecs_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -79,12 +80,12 @@ data "aws_iam_policy_document" "events_assume_role_policy" {
 # SG - ECS
 
 resource "aws_security_group" "ecs_sg" {
-  name        = "ecs-${var.app_name}-${var.environment}"
-  description = "${var.app_name}-${var.environment} container security group"
+  name        = "ecs-${var.environment}-${var.github_repo_name}-runner"
+  description = "${var.environment}-${var.github_repo_name}-runner container security group"
   vpc_id      = var.ecs_vpc_id
 
   tags = {
-    Name        = "ecs-${var.app_name}-${var.environment}"
+    Name        = "ecs-${var.environment}-${var.github_repo_name}-runner"
     Environment = var.environment
     Automation  = "Terraform"
   }
@@ -102,6 +103,7 @@ resource "aws_security_group_rule" "app_ecs_allow_outbound" {
 }
 
 resource "aws_security_group_rule" "allow_self" {
+  description       = "Allow all ingress between resources within this security group"
   type              = "ingress"
   to_port           = -1
   from_port         = -1
@@ -127,7 +129,7 @@ data "aws_iam_policy_document" "cloudwatch_target_role_policy_doc" {
 }
 
 resource "aws_iam_role" "cloudwatch_target_role" {
-  name               = "cw-target-role-${var.app_name}-${var.environment}-${var.task_name}"
+  name               = "cw-target-role-${var.environment}-${var.github_repo_name}-runner"
   description        = "Role allowing CloudWatch Events to run the task"
   assume_role_policy = data.aws_iam_policy_document.events_assume_role_policy.json
 }
@@ -139,7 +141,7 @@ resource "aws_iam_role_policy" "cloudwatch_target_role_policy" {
 }
 
 resource "aws_iam_role" "task_role" {
-  name               = "ecs-task-role-${var.app_name}-${var.environment}-${var.task_name}"
+  name               = "ecs-task-role-${var.environment}-${var.github_repo_name}-runner"
   description        = "Role allowing container definition to execute"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume_role_policy.json
 }
@@ -183,7 +185,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
       "secretsmanager:GetSecretValue",
     ]
     resources = [
-      "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:/${var.app_name}-${var.environment}*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:/github-runner-${var.environment}*",
     ]
   }
 
@@ -193,7 +195,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
     ]
 
     resources = [
-      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.app_name}-${var.environment}*"
+      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/github-runner-${var.environment}*"
     ]
   }
 }
@@ -203,7 +205,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 resource "aws_ecs_cluster" "github-runner" {
   count = local.cluster_provided ? 0 : 1
 
-  name = var.app_name
+  name = "github-runner"
 
   tags = {
     Environment = var.environment
@@ -214,9 +216,34 @@ resource "aws_ecs_cluster" "github-runner" {
   }
 }
 
+resource "aws_ecs_task_definition" "runner_def" {
+  family        = "github-runner-${var.environment}"
+  network_mode  = "awsvpc"
+  task_role_arn = aws_iam_role.task_role.arn
+
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "1024"
+  execution_role_arn       = aws_iam_role.task_role.arn
+
+  container_definitions = templatefile("${path.module}/container-definitions.tpl",
+    {
+      environment = var.environment,
+      ecr_repo_url = aws_ecr_repository.main.repository_url,
+      ecr_repo_tag = var.ecr_repo_tag,
+      awslogs_group = local.awslogs_group,
+      awslogs_region = data.aws_region.current.name,
+      personal_access_token_arn = var.personal_access_token_arn,
+      github_repo_owner = var.github_repo_owner,
+      github_repo_name = var.github_repo_name
+    }
+  )
+}
+
 resource "aws_ecs_service" "actions-runner" {
   name = "github-actions-runner"
   cluster = local.cluster_arn
+  task_definition = aws_ecs_task_definition.runner_def.arn
   desired_count = var.ecs_desired_count
   launch_type = "FARGATE"
   network_configuration {

@@ -35,19 +35,9 @@ variable "scan_on_push" {
 
 # ECS variables
 
-variable "app_name" {
-  type        = string
-  description = "Name of the application"
-}
-
 variable "environment" {
   type        = string
   description = "Environment name"
-}
-
-variable "task_name" {
-  type        = string
-  description = "Name of the task to be run"
 }
 
 variable "ecs_vpc_id" {
@@ -60,7 +50,7 @@ variable "ecs_subnet_ids" {
   type        = list(string)
 }
 
-variable "repo_tag" {
+variable "ecr_repo_tag" {
   type        = string
   description = "The tag to identify and pull the image in ECR repo"
   default     = "latest"
@@ -89,13 +79,13 @@ variable "personal_access_token_arn" {
   type        = string
 }
 
-variable "repo_owner" {
+variable "github_repo_owner" {
   description = "the name of the repo owner"
   type        = string
   default     = "CMSgov"
 }
 
-variable "repo_name" {
+variable "github_repo_name" {
   description = "the name of the repository"
   type        = string
 }
