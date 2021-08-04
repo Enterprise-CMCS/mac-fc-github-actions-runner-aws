@@ -10,7 +10,7 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 ## Set Up
 
 1. Fork this repository.
-2. Set up an IAM user in AWS with the necessary permissions to support the docker-build.yml workflow script included. Refer to [this ticket](https://jiraent.cms.gov/browse/CLDSPT-3127) for a previous implementation.
+2. Set up an IAM user in AWS with the necessary permissions to support the docker-build.yml workflow script included. See `IAM User Permissions` section below for details.
     * Once you have your user, be sure to populate your repository secrets with its access keys
     * Refer to the [docs](docs) for past ADRs regarding the IAM user and GitHub actions workflow considerations. In particular, you will need to manually change your ECR repository name.
 3. Provision the Terraform module in this repository.
@@ -18,6 +18,70 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 
 **(WIP)**
 To be populated with more details on how to get this operationalized via ECS/Fargate.
+
+### IAM User Permissions
+
+Creation of the IAM user, group, and attached policy should be submitted via [CMS Jira](https://jiraent.cms.gov/) to the Cloud Support team.
+
+For the IAM user needed for Github to interact with AWS (specifically ECR and ECS), the username should be `github-runner` and the user should be a part of the group `github-runner-group`. The permissions policy should be attached to that group `github-runner-group` to follow best practices.
+
+`github-runners` IAM policy:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "IAMActions",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:PassRole"
+            ],
+            "Resource": "arn:aws:iam::$AWS_ACCOUNT_ID:role/ecs-task-role-*"
+        },
+        {
+            "Sid": "ECRTokenAndECSTaskActions",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:RegisterTaskDefinition",
+                "ecr:GetAuthorizationToken"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ECRRepositoriesActions",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:CompleteLayerUpload",
+                "ecr:DescribeRepositories",
+                "ecr:ListImages",
+                "ecr:DescribeImages",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetLifecyclePolicy",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage",
+                "ecr:UploadLayerPart"
+            ],
+            "Resource": "arn:aws:ecr:$AWS_REGION:$AWS_ACCOUNT_ID:repository/github-runner"
+        },
+        {
+            "Sid": "ECSClusterActions",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:DescribeTaskDefinition",
+                "ecs:DescribeServices",
+                "ecs:UpdateService"
+            ],
+            "Resource": [
+                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:cluster/github-runner",
+                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:service/github-runner/github-actions-runner"
+            ]
+        }
+    ]
+}
+```
+
 
 ## Local Usage
 
