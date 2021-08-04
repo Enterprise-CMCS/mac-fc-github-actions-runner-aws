@@ -25,6 +25,10 @@ Creation of the IAM user, group, and attached policy should be submitted via [CM
 
 For the IAM user needed for Github to interact with AWS (specifically ECR and ECS), the username should be `github-runner` and the user should be a part of the group `github-runner-group`. The permissions policy should be attached to that group `github-runner-group` to follow best practices.
 
+`$AWS_ACCOUNT_ID` and `$AWS_REGION` in the IAM policy should be updated to be the appropriate account ID and region for your deployment.
+
+All of the specified resources in the IAM policy do not have to exist prior to the policy being created.
+
 `github-runners` IAM policy:
 
 ```
