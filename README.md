@@ -31,7 +31,7 @@ All of the specified resources in the IAM policy do not have to exist prior to t
 
 `github-runners` IAM policy:
 
-```
+```text
 {
     "Version": "2012-10-17",
     "Statement": [
