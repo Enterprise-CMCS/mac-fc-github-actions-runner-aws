@@ -11,44 +11,6 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
-data "aws_iam_policy_document" "cloudwatch_logs_allow_kms" {
-  statement {
-    sid    = "Allow IAM user KMS access"
-    effect = "Allow"
-
-    principals {
-      type = "AWS"
-      identifiers = [
-        "arn:${data.aws_partition.current.partition}::${data.aws_caller_identity.current.account_id}:root",
-      ]
-    }
-
-    actions = [
-      "kms:*",
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "Allow logs KMS access"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["logs.${data.aws_region.current.name}.amazonaws.com"]
-    }
-
-    actions = [
-      "kms:Encrypt*",
-      "kms:Decrypt*",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:Describe*"
-    ]
-    resources = ["*"]
-  }
-}
-
 # Assume Role policies
 
 data "aws_iam_policy_document" "ecs_assume_role_policy" {
