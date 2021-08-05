@@ -2,7 +2,7 @@ name: Get latest GitHub Actions Runner
 
 on:
   schedule:
-    - cron: '30 14 * * *'
+    - cron: '40 18 * * *'
 jobs:
   update-runner:
     runs-on: ubuntu-latest
