@@ -1,8 +1,10 @@
 name: Get latest GitHub Actions Runner
 
 on:
-  schedule:
-    - cron: '30 10 * * *'
+  # schedule:
+  #   - cron: '30 10 * * *'
+  push:
+    branches: [workflow-runner-update]
 jobs:
   update-runner:
     runs-on: ubuntu-latest
@@ -44,4 +46,4 @@ jobs:
           delete-branch: true
           title: Update Actions Runner Version to ${{ steps.get-versions.outputs.release_tag }}
           body: Automated update from Github Actions Runner version ${{ steps.get-versions.outputs.current_tag }} to version ${{ steps.get-versions.outputs.release_tag }}
-          reviewers: chtakahashi, LinuxBozo, lxuo-trussworks, dynamike
+          team-reviewers: MAC-FC
