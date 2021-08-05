@@ -1,10 +1,8 @@
 name: Get latest GitHub Actions Runner
 
 on:
-  # schedule:
-  #   - cron: '30 10 * * *'
-  push:
-    branches: [workflow-runner-update]
+  schedule:
+    - cron: '30 14 * * *'
 jobs:
   update-runner:
     runs-on: ubuntu-latest
