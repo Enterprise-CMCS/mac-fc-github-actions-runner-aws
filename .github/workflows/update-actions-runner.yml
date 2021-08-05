@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '30 10 * * *'
 jobs:
-  get-version:
+  update-runner:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
