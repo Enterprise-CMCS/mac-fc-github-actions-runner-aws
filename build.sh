@@ -5,7 +5,7 @@ set -ex
 apt-get update
 apt-get -qq -y install --no-install-recommends \
     ca-certificates curl tar git \
-    libyaml-dev build-essential jq
+    libyaml-dev build-essential jq uuid-runtime
 
 # Install our user and create directory to install actions-runner and the hostedtoolcache
 addgroup --gid 1000 "${RUNGROUP}" && adduser --uid 1000 --ingroup "${RUNGROUP}" --shell /bin/bash "${RUNUSER}"

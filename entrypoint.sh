@@ -9,12 +9,14 @@ REGISTRATION_TOKEN=$(curl -s -X POST \
     -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" \
     "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runners/registration-token" | jq -r .token)
 
+UNIQUE_ID=$(uuidgen)
+
 # Register the runner
 ./config.sh \
       --unattended \
       --url "https://github.com/${REPO_OWNER}/${REPO_NAME}" \
       --token "${REGISTRATION_TOKEN}" \
-      --name "TEST_RUNNER" \
+      --name "${UNIQUE_ID}" \
       --work ../work-dir \
       --replace
 

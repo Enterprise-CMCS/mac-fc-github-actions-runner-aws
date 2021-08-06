@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      DO_DEPLOY: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      DO_DEPLOY: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && github.ref == 'refs/heads/generate-uniqueIDs-for-runner') }}
     steps:
       - uses: actions/checkout@v2
       - name: Create env var for docker tag
