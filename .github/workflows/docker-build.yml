@@ -9,6 +9,9 @@ jobs:
       DO_DEPLOY: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v2
+      - uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: "v0.11.1"
       - name: Create env var for docker tag
         run: echo "TAG=$(date +%s)" >> "$GITHUB_ENV"
       - name: Create env var for git sha tag
@@ -39,6 +42,38 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+      - name: Push docker image to Amazon ECR with just HASH
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${HASH}
+      - name: Setup namespace and secrets
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          kubectl create ns gitaction
+          kubectl create secret docker-registry ecrcred \
+            --docker-server=$ECR_REGISTRY \
+            --docker-username=AWS \
+            --docker-password=$(aws ecr get-login-password) \
+            --namespace=gitaction
+          kubectl create secret generic github-secret \
+            --from-literal=PERSONAL_ACCESS_TOKEN=${{ secrets.ROBOT_MAC_FC_TOKEN }} \
+            --type='opaque' \
+            --namespace=gitaction
+      - name: Running image in kind
+        run: |
+          sed -i 's/LATEST_IMAGE_REF/${{steps.login-ecr.outputs.registry}}\/${{env.ECR_REPOSITORY}}:${{env.HASH}}/g' kube-manifest.yml
+          kubectl apply -f kube-manifest.yml
+          while [[ $(kubectl get pods -n gitaction -l app=runner -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 15; done
+          until kubectl logs -n gitaction -l app=runner | grep "Listening for Jobs"; do echo "waiting for runner to connect to github" && sleep 5; done
+      - name: Test GH API to see runner was actually registered and online
+        run: |
+          curl -s \
+            -H "Accept: application/vnd.github.v3+json" \
+            -u robot-mac-fc:${{ secrets.ROBOT_MAC_FC_TOKEN }} \
+            https://api.github.com/repos/CMSgov/github-actions-runner-aws/actions/runners \
+          | grep "online"
       - name: Push docker image to Amazon ECR with all tags
         if: ${{ fromJSON(env.DO_DEPLOY) }}
         env:
