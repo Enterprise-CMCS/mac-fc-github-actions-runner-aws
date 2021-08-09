@@ -47,7 +47,8 @@ All of the specified resources in the IAM policy do not have to exist prior to t
             "Effect": "Allow",
             "Action": [
                 "ecs:RegisterTaskDefinition",
-                "ecr:GetAuthorizationToken"
+                "ecr:GetAuthorizationToken",
+                "ecs:DescribeTaskDefinition"
             ],
             "Resource": "*"
         },
@@ -71,7 +72,6 @@ All of the specified resources in the IAM policy do not have to exist prior to t
             "Sid": "ECSClusterActions",
             "Effect": "Allow",
             "Action": [
-                "ecs:DescribeTaskDefinition",
                 "ecs:DescribeServices",
                 "ecs:UpdateService"
             ],
