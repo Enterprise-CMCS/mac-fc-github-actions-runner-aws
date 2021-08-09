@@ -11,8 +11,19 @@ This procedure assumes that you have already taken the steps documented in the m
 - Instantiated the requisite infrastructure in AWS ECR and ECS
 
 ### Provisioning the Runners
-Below is a sample workflow on how to provision self-hosted runners to use in your repository.
+We will use GitHub actions to provision the requisite number of runners we need we need.
+
+In the root of your repository, create a directory to house your workflow and a yml file for the workflow:
+```
+mkdir -p .github/workflow
+touch .github/workflow/your-workflow.yml
+```
+
+Your workflow must contain the start-runner and remove-runners jobs listed below.
+
 ```yaml
+name: your-workflow-name
+
 on:
 	push:
 		branches: [main]
