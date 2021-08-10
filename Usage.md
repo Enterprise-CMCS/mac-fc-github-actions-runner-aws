@@ -38,7 +38,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: github-runner
   IMAGE_TAG: latest
-  CONTAINER_NAME: github-runner-dev-github-actions-job
+  CONTAINER_NAME: github-runner-dev
   SERVICE: github-actions-runner
   CLUSTER: github-runner
   DESIRED_COUNT: 3
