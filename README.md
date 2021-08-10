@@ -90,7 +90,7 @@ All of the specified resources in the IAM policy do not have to exist prior to t
 
 Here is an example of how you would use the module in your own terraform deployment:
 
-```
+```text
 module "github-actions-runner-aws" {
   source = "github.com/cmsgov/github-actions-runner-aws?ref=v1.0.0"
 
