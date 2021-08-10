@@ -43,5 +43,7 @@ jobs:
           branch: update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
           delete-branch: true
           title: Update Actions Runner Version to ${{ steps.get-versions.outputs.release_tag }}
-          body: Automated update from Github Actions Runner version ${{ steps.get-versions.outputs.current_tag }} to version ${{ steps.get-versions.outputs.release_tag }}
+          body: |
+            Automated update from Github Actions Runner version ${{ steps.get-versions.outputs.current_tag }} to version ${{ steps.get-versions.outputs.release_tag }}
+            Release Notes: https://github.com/actions/runner/releases/tag/v${{ steps.get-versions.outputs.release_tag }}
           team-reviewers: MAC-FC

@@ -38,8 +38,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: github-runner
   IMAGE_TAG: latest
-  TASK_DEFINITION_FILE: task-definition.json
-  CONTAINER_NAME: github-runner-dev-github-actions-job
+  CONTAINER_NAME: dev-mac-fc-infra
+  TASK_DEFINITION: github-runner-dev
   SERVICE: github-actions-runner
   CLUSTER: github-runner
   DESIRED_COUNT: 3
@@ -65,11 +65,17 @@ jobs:
           ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Grab task definition
+        id: get-task-def
+        run: |
+          aws ecs describe-task-definition \
+          --task-definition ${{ env.TASK_DEFINITION }} \
+          --query taskDefinition > task-definition.json
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ env.TASK_DEFINITION_FILE }}
+          task-definition: task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.image-name.outputs.image }}
       - name: Increment ECS Service Desired Count
@@ -85,30 +91,29 @@ jobs:
   remove-runners:
     name: Deprovision self-hosted runners
     needs: [start-runner, YOUR_JOB_NAMES_HERE]
-  runs-on: ubuntu-latest
-  steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-    - name: Decrement ECS Service Desired Count
-      run: aws ecs update-service --service ${{ env.SERVICE }} --cluster ${{ env.CLUSTER }} --desired-count 0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Decrement ECS Service Desired Count
+        run: aws ecs update-service --service ${{ env.SERVICE }} --cluster ${{ env.CLUSTER }} --desired-count 0
 ```
 
 The items to configure are:
 
 - **Your AWS Access Key and Secret Access Keys**. These should be populated in your repository secrets.
-  - You will also need to ensure that you have an IAM User with sufficient permissions to access the AWS services you will need to interact with. These are described in a separate README.
 
 - All variables in the **top-level env** configuration of the workflow:
 
   - AWS_REGION - your AWS region, e.g. us-east-1
   - ECR_REPOSITORY - the name of the ECR repository in which you are housing your self-hosted runner images
   - IMAGE_TAG - the unique tag of a specific image to pull from your ECR repository. For example, "latest", which is updated each time a new image is pushed to ECR.
-  - TASK_DEFINITION_FILE: the file name/path to a JSON-formatted task definition file. For example, if you keep a file named task-definition.json in the root of your git repo, you may simply input `task-definition.json`
   - CONTAINER_NAME: The name of the container defined in the containerDefinitions section of the ECS task definition
+  - TASK_DEFINITION: The name of the task definition family to pull
   - SERVICE: The name of the ECS service to deploy to
   - CLUSTER: The name of the ECS service's cluster
   - DESIRED_COUNT: The number of runners you will need. For example, if you have 3 jobs following the start-runner task, you should populate this with the value 3.
