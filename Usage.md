@@ -38,7 +38,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: github-runner
   IMAGE_TAG: latest
-  CONTAINER_NAME: github-runner-dev
+  CONTAINER_NAME: dev-mac-fc-infra
+  TASK_DEFINITION: github-runner-dev
   SERVICE: github-actions-runner
   CLUSTER: github-runner
   DESIRED_COUNT: 3
@@ -68,7 +69,7 @@ jobs:
         id: get-task-def
         run: |
           aws ecs describe-task-definition \
-          --task-definition ${{ env.CONTAINER_NAME }} \
+          --task-definition ${{ env.TASK_DEFINITION }} \
           --query taskDefinition > task-definition.json
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
@@ -112,6 +113,7 @@ The items to configure are:
   - ECR_REPOSITORY - the name of the ECR repository in which you are housing your self-hosted runner images
   - IMAGE_TAG - the unique tag of a specific image to pull from your ECR repository. For example, "latest", which is updated each time a new image is pushed to ECR.
   - CONTAINER_NAME: The name of the container defined in the containerDefinitions section of the ECS task definition
+  - TASK_DEFINITION: The name of the task definition family to pull
   - SERVICE: The name of the ECS service to deploy to
   - CLUSTER: The name of the ECS service's cluster
   - DESIRED_COUNT: The number of runners you will need. For example, if you have 3 jobs following the start-runner task, you should populate this with the value 3.
