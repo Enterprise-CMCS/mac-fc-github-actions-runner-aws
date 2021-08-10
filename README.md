@@ -7,6 +7,8 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 * An ECR repository to which you can push images of your runner
 * An ECS cluster and ECS Fargate task definition to spin up an instance of this runner *per job* in your GitHub Actions workflow.
 
+![AWS Deployment Diagram](./AWSDeploymentDiagram.png)
+
 ## Set Up
 
 1. Fork this repository.
@@ -84,6 +86,33 @@ All of the specified resources in the IAM policy do not have to exist prior to t
 }
 ```
 
+## Terraform Deployment
+
+Here is an example of how you would use the module in your own terraform deployment:
+
+```
+module "github-actions-runner-aws" {
+  source = "github.com/cmsgov/github-actions-runner-aws?ref=v1.0.0"
+
+  # ECR variables
+  container_name          = "github-runner"
+  allowed_read_principals = local.principals_ro_access
+  ci_user_arn             = data.aws_iam_user.github_ci_user.arn
+
+  # ECS variables
+  environment               = "dev"
+  ecs_desired_count         = 0
+  ecs_vpc_id                = data.aws_vpc.example_east_sandbox.id
+  ecs_subnet_ids            = data.aws_subnet_ids.private.ids
+  ecr_repo_tag              = "latest"
+  logs_cloudwatch_group_arn = aws_cloudwatch_log_group.main.arn
+
+  # GitHub Runner variables
+  personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
+  github_repo_owner         = "org-name"
+  github_repo_name          = "repo-name"
+}
+```
 
 ## Local Usage
 
