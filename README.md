@@ -7,7 +7,7 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 * An ECR repository to which you can push images of your runner
 * An ECS cluster and ECS Fargate task definition to spin up an instance of this runner *per job* in your GitHub Actions workflow.
 
-![AWS Deployment Diagram](./AWSDeploymentDiagram.png | width=400)
+![](./AWSDeploymentDiagram.png?raw=true | width=400)
 
 ## Set Up
 
