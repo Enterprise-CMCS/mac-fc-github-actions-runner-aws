@@ -86,11 +86,32 @@ All of the specified resources in the IAM policy do not have to exist prior to t
 }
 ```
 
-## Terraform Deployment
+## Local Usage
 
-Here is an example of how you would use the module in your own terraform deployment:
+1. Clone this repository to your machine.
+2. Ensure your environment variables are populated:
+    * `PERSONAL_ACCESS_TOKEN` - Your github personal access token with repository permissions.
+        * Go to Settings > Developer Settings > Personal Access Token, and click on **Generate new token**
+        ![Where to Generate a New Token](./GitHubPAT.png)
+        * Give your token a note and check the box to give full control of private repositories
+        ![Repository Permissions](./GitHubPAT2.png)
+        * Once generated, be sure to save your token in a secure location such as 1pass or AWS Secrets Manager
+    * `REPO_OWNER` - The name of the repository owner, e.g. `CMSgov`
+    * `REPO_NAME` - The name of the repository
+3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
+4. In one of the workflows in the target repository, change the `runs-on` value to `self-hosted`. This will make the workflow use the registered self-hosted runner to complete its task, after which it will shut down.
 
-```text
+## Terraform Module
+
+This repository contains a Terraform module to deploy an ECR repo, ECS cluster, and ECS service in support of automating deployment of ephemeral self-hosted Github Actions runners within AWS.
+
+This module supports the following features:
+
+*
+
+### Usage
+
+```hcl
 module "github-actions-runner-aws" {
   source = "github.com/cmsgov/github-actions-runner-aws?ref=v1.0.0"
 
@@ -114,17 +135,28 @@ module "github-actions-runner-aws" {
 }
 ```
 
-## Local Usage
+### Optional Parameters
 
-1. Clone this repository to your machine.
-2. Ensure your environment variables are populated:
-    * `PERSONAL_ACCESS_TOKEN` - Your github personal access token with repository permissions.
-        * Go to Settings > Developer Settings > Personal Access Token, and click on **Generate new token**
-        ![Where to Generate a New Token](./GitHubPAT.png)
-        * Give your token a note and check the box to give full control of private repositories
-        ![Repository Permissions](./GitHubPAT2.png)
-        * Once generated, be sure to save your token in a secure location such as 1pass or AWS Secrets Manager
-    * `REPO_OWNER` - The name of the repository owner, e.g. `CMSgov`
-    * `REPO_NAME` - The name of the repository
-3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
-4. In one of the workflows in the target repository, change the `runs-on` value to `self-hosted`. This will make the workflow use the registered self-hosted runner to complete its task, after which it will shut down.
+| Name | Default Value | Description |
+|------|---------|---------|
+| lifecycle_policy | "" | ECR repository lifecycle policy document. Used to override the default policy. |
+| tags | {} | Additional tags to apply |
+| scan_on_push | true | Scan image on push to repo. |
+| ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
+| ecs_cluster_arn | "" | ECS cluster ARN to use for running this profile |
+| github_repo_owner | "CMSgov" | The name of the Github repo owner. |
+
+### Outputs
+
+None.
+
+### Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 0.13 |
+| aws | >= 3.0 |
+
+### Modules
+
+None.
