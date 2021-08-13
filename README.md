@@ -7,6 +7,8 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 * An ECR repository to which you can push images of your runner
 * An ECS cluster and ECS Fargate task definition to spin up an instance of this runner *per job* in your GitHub Actions workflow.
 
+![AWS Deployment Diagram](./AWSDeploymentDiagram.png)
+
 ## Set Up
 
 1. Fork this repository.
@@ -84,7 +86,6 @@ All of the specified resources in the IAM policy do not have to exist prior to t
 }
 ```
 
-
 ## Local Usage
 
 1. Clone this repository to your machine.
@@ -99,3 +100,96 @@ All of the specified resources in the IAM policy do not have to exist prior to t
     * `REPO_NAME` - The name of the repository
 3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
 4. In one of the workflows in the target repository, change the `runs-on` value to `self-hosted`. This will make the workflow use the registered self-hosted runner to complete its task, after which it will shut down.
+
+## Terraform Module
+
+This repository contains a Terraform module to deploy an ECR repo, ECS cluster, and ECS service in support of automating deployment of ephemeral self-hosted Github Actions runners within AWS.
+
+This module supports the following features:
+
+* Optionally pass an existing ECS Cluster, and if not, create one
+* Set default desired count for ECS Service (default is 0, assuming it will be managed by Github Actions workflow)
+
+### Usage
+
+```hcl
+module "github-actions-runner-aws" {
+  source = "github.com/cmsgov/github-actions-runner-aws?ref=v1.0.0"
+
+  # ECR variables
+  container_name          = "github-runner"
+  allowed_read_principals = "arn:aws:iam::123456789012:root"
+  ci_user_arn             = "arn:aws:iam::123456789012:user/ci-user"
+
+  # ECS variables
+  environment               = "dev"
+  ecs_desired_count         = 0
+  ecs_vpc_id                = "${vpc.id}"
+  ecs_subnet_ids            = "${vpc.private_subnets.id}"
+  ecr_repo_tag              = "latest"
+  logs_cloudwatch_group_arn = "${cloudwatch_group_arn.arn}"
+
+  # GitHub Runner variables
+  personal_access_token_arn = "${secretsmanager.token.arn}"
+  github_repo_owner         = "${repo_owner}"
+  github_repo_name          = "${repo_name}"
+}
+```
+
+### Data Sources
+
+Some existing variable information can be looked-up in AWS via data sources. For example:
+
+```hcl
+data "aws_secretsmanager_secret_version" "token" {
+  secret_id = "/github-runner-dev/token"
+}
+```
+
+Will let you then use the ARN of that data source in this way:
+
+```hcl
+personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
+```
+
+### Required Parameters
+
+| Name | Description |
+|------|---------|
+| container_name | ECR container name |
+| allowed_read_principals | Additional tags to apply |
+| ci_user_arn | ARN for CI user which has read/write permissions |
+| environment | Environment name (used in naming resources) |
+| ecs_desired_count | Sets the default desired count for task definitions within the ECS service |
+| ecs_vpc_id | VPC ID to be used by ECS |
+| ecs_subnet_ids | Subnet IDs for the ECS tasks. |
+| logs_cloudwatch_group_arn | CloudWatch log group ARN for container logs |
+| personal_access_token_arn | AWS SecretsManager ARN for GitHub personal access token |
+| github_repo_owner | The name of the Github repo owner |
+| github_repo_name | The Github repository name |
+
+### Optional Parameters
+
+| Name | Default Value | Description |
+|------|---------|---------|
+| ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
+| ecs_cluster_arn | "" | ECS cluster ARN to use for running this profile |
+| github_repo_owner | "CMSgov" | The name of the Github repo owner. |
+| lifecycle_policy | "" | ECR repository lifecycle policy document. Used to override the default policy. |
+| scan_on_push | true | Scan image on push to repo. |
+| tags | {} | Additional tags to apply |
+
+### Outputs
+
+None.
+
+### Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 0.13 |
+| aws | >= 3.0 |
+
+### Modules
+
+None.
