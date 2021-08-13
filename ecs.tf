@@ -1,5 +1,5 @@
 locals {
-    awslogs_group    = split(":", var.logs_cloudwatch_group_arn)[6]
+  awslogs_group    = split(":", var.logs_cloudwatch_group_arn)[6]
   cluster_arn      = var.ecs_cluster_arn != "" ? var.ecs_cluster_arn : aws_ecs_cluster.github-runner[0].arn
   cluster_provided = var.ecs_cluster_arn != "" ? true : false
 }
@@ -190,26 +190,32 @@ resource "aws_ecs_task_definition" "runner_def" {
 
   container_definitions = templatefile("${path.module}/container-definitions.tpl",
     {
-      environment = var.environment,
-      ecr_repo_url = aws_ecr_repository.main.repository_url,
-      ecr_repo_tag = var.ecr_repo_tag,
-      awslogs_group = local.awslogs_group,
-      awslogs_region = data.aws_region.current.name,
+      environment               = var.environment,
+      ecr_repo_url              = aws_ecr_repository.main.repository_url,
+      ecr_repo_tag              = var.ecr_repo_tag,
+      awslogs_group             = local.awslogs_group,
+      awslogs_region            = data.aws_region.current.name,
       personal_access_token_arn = var.personal_access_token_arn,
-      github_repo_owner = var.github_repo_owner,
-      github_repo_name = var.github_repo_name
+      github_repo_owner         = var.github_repo_owner,
+      github_repo_name          = var.github_repo_name
     }
   )
 }
 
 resource "aws_ecs_service" "actions-runner" {
-  name = "github-actions-runner"
-  cluster = local.cluster_arn
+  name            = "github-actions-runner"
+  cluster         = local.cluster_arn
   task_definition = aws_ecs_task_definition.runner_def.arn
-  desired_count = var.ecs_desired_count
-  launch_type = "FARGATE"
+  desired_count   = var.ecs_desired_count
+  launch_type     = "FARGATE"
   network_configuration {
-    subnets = [for s in var.ecs_subnet_ids: s]
+    subnets         = [for s in var.ecs_subnet_ids : s]
     security_groups = [aws_security_group.ecs_sg.id]
+  }
+
+  # github actions workflows manages changes to the task defintion, so we
+  # should ignore those changes in terraform
+  lifecycle {
+    ignore_changes = [task_definition]
   }
 }
