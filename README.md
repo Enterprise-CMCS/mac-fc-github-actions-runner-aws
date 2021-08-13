@@ -117,34 +117,50 @@ module "github-actions-runner-aws" {
 
   # ECR variables
   container_name          = "github-runner"
-  allowed_read_principals = local.principals_ro_access
-  ci_user_arn             = data.aws_iam_user.github_ci_user.arn
+  allowed_read_principals = "arn:aws:iam::123456789012:root"
+  ci_user_arn             = "arn:aws:iam::123456789012:user/ci-user"
 
   # ECS variables
   environment               = "dev"
   ecs_desired_count         = 0
-  ecs_vpc_id                = data.aws_vpc.example_east_sandbox.id
-  ecs_subnet_ids            = data.aws_subnet_ids.private.ids
+  ecs_vpc_id                = "${vpc.id}"
+  ecs_subnet_ids            = "${vpc.private_subnets.id}"
   ecr_repo_tag              = "latest"
-  logs_cloudwatch_group_arn = aws_cloudwatch_log_group.main.arn
+  logs_cloudwatch_group_arn = "${cloudwatch_group_arn.arn}"
 
   # GitHub Runner variables
-  personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
-  github_repo_owner         = "org-name"
-  github_repo_name          = "repo-name"
+  personal_access_token_arn = "${secretsmanager.token.arn}"
+  github_repo_owner         = "${repo_owner}"
+  github_repo_name          = "${repo_name}"
 }
 ```
+
+### Required Parameters
+
+| Name | Description |
+|------|---------|
+| container_name | ECR container name |
+| allowed_read_principals | Additional tags to apply |
+| ci_user_arn | ARN for CI user which has read/write permissions |
+| environment | Environment name (used in naming resources) |
+| ecs_desired_count | Sets the default desired count for task definitions within the ECS service |
+| ecs_vpc_id | VPC ID to be used by ECS |
+| ecs_subnet_ids | Subnet IDs for the ECS tasks. |
+| logs_cloudwatch_group_arn | CloudWatch log group ARN for container logs |
+| personal_access_token_arn | AWS SecretsManager ARN for GitHub personal access token |
+| github_repo_owner | The name of the Github repo owner |
+| github_repo_name | The Github repository name |
 
 ### Optional Parameters
 
 | Name | Default Value | Description |
 |------|---------|---------|
-| lifecycle_policy | "" | ECR repository lifecycle policy document. Used to override the default policy. |
-| tags | {} | Additional tags to apply |
-| scan_on_push | true | Scan image on push to repo. |
 | ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
 | ecs_cluster_arn | "" | ECS cluster ARN to use for running this profile |
 | github_repo_owner | "CMSgov" | The name of the Github repo owner. |
+| lifecycle_policy | "" | ECR repository lifecycle policy document. Used to override the default policy. |
+| scan_on_push | true | Scan image on push to repo. |
+| tags | {} | Additional tags to apply |
 
 ### Outputs
 
