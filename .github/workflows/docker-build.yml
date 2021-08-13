@@ -74,6 +74,14 @@ jobs:
             -u robot-mac-fc:${{ secrets.ROBOT_MAC_FC_TOKEN }} \
             https://api.github.com/repos/CMSgov/github-actions-runner-aws/actions/runners \
           | grep "online"
+      - name: Test our internal runner with call to separate workflow
+        uses: convictional/trigger-workflow-and-wait@v1.5.0
+        with:
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          ref: ${{ github.ref }}
+          github_token: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
+          workflow_file_name: runner-test.yml
       - name: Push docker image to Amazon ECR with all tags
         if: ${{ fromJSON(env.DO_DEPLOY) }}
         env:
