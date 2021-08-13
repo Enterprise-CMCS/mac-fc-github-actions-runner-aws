@@ -107,7 +107,8 @@ This repository contains a Terraform module to deploy an ECR repo, ECS cluster, 
 
 This module supports the following features:
 
-*
+* Optionally pass an existing ECS Cluster, and if not, create one
+* Set default desired count for ECS Service (default is 0, assuming it will be managed by Github Actions workflow)
 
 ### Usage
 
@@ -133,6 +134,22 @@ module "github-actions-runner-aws" {
   github_repo_owner         = "${repo_owner}"
   github_repo_name          = "${repo_name}"
 }
+```
+
+### Data Sources
+
+Some existing variable information can be looked-up in AWS via data sources. For example:
+
+```hcl
+data "aws_secretsmanager_secret_version" "token" {
+  secret_id = "/github-runner-dev/token"
+}
+```
+
+Will let you then use the ARN of that data source in this way:
+
+```hcl
+personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 ```
 
 ### Required Parameters
