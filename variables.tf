@@ -6,7 +6,7 @@ variable "container_name" {
 }
 
 variable "allowed_read_principals" {
-  type        = list
+  type        = list(any)
   description = "External principals that are allowed to read from the ECR repository"
 }
 
@@ -41,7 +41,7 @@ variable "environment" {
 }
 
 variable "ecs_vpc_id" {
-  type = string
+  type        = string
   description = "VPC ID to be used by ECS"
 }
 
@@ -61,16 +61,16 @@ variable "logs_cloudwatch_group_arn" {
   type        = string
 }
 
- variable "ecs_cluster_arn" {
-   description = "ECS cluster ARN to use for running this profile"
-   type        = string
-   default     = ""
- }
+variable "ecs_cluster_arn" {
+  description = "ECS cluster ARN to use for running this profile"
+  type        = string
+  default     = ""
+}
 
- variable "ecs_desired_count" {
-   description = "Desired task count for ECS service"
-   type        = number
- }
+variable "ecs_desired_count" {
+  description = "Desired task count for ECS service"
+  type        = number
+}
 
 # GitHub Runner Variables
 

@@ -17,7 +17,7 @@ resource "aws_ecr_repository" "main" {
 
 resource "aws_ecr_lifecycle_policy" "main" {
   repository = aws_ecr_repository.main.name
-  policy = local.policy
+  policy     = local.policy
 }
 
 # attach a ECR policy to a repository and give read only cross account access to external principal accounts
