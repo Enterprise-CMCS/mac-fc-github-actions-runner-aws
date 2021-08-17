@@ -42,6 +42,11 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+      - name: Run Dockle for docker best practices
+        uses: hands-lab/dockle-action@v1
+        with:
+          image: '${{steps.login-ecr.outputs.registry}}/${{env.ECR_REPOSITORY}}:${{env.HASH}}'
+          exit-code: '1'
       - name: Push docker image to Amazon ECR with just HASH
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
