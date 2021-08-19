@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG RUNUSER=runner
 ARG RUNGROUP=runner
 
-ARG ACTIONS_VERSION="2.280.2"
+ARG ACTIONS_VERSION="2.280.3"
 
 COPY build.sh /tmp
 
