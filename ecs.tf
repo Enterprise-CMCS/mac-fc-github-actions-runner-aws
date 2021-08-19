@@ -181,7 +181,7 @@ resource "aws_ecs_task_definition" "runner_def" {
   container_definitions = templatefile("${path.module}/container-definitions.tpl",
     {
       environment               = var.environment,
-      ecr_repo_url              = var.ecr_repo_url
+      ecr_repo_url              = var.ecr_repo_url,
       ecr_repo_tag              = var.ecr_repo_tag,
       awslogs_group             = local.awslogs_group,
       awslogs_region            = data.aws_region.current.name,
