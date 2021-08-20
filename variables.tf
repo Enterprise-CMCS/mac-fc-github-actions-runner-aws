@@ -1,36 +1,15 @@
 # ECR variables
 
-variable "container_name" {
+variable "ecr_repo_url" {
   type        = string
-  description = "Container name"
+  description = "The URL of the github actions ECR repository"
+  default     = "037370603820.dkr.ecr.us-east-1.amazonaws.com/github-actions-runner"
 }
 
-variable "allowed_read_principals" {
-  type        = list(any)
-  description = "External principals that are allowed to read from the ECR repository"
-}
-
-variable "ci_user_arn" {
+variable "ecr_repo_tag" {
   type        = string
-  description = "ARN for CI user which has read/write permissions"
-}
-
-variable "lifecycle_policy" {
-  type        = string
-  description = "ECR repository lifecycle policy document. Used to override the default policy."
-  default     = ""
-}
-
-variable "tags" {
-  type        = map(any)
-  description = "Additional tags to apply."
-  default     = {}
-}
-
-variable "scan_on_push" {
-  type        = bool
-  description = "Scan image on push to repo."
-  default     = true
+  description = "The tag to identify and pull the image in ECR repository"
+  default     = "latest"
 }
 
 # ECS variables
@@ -50,12 +29,6 @@ variable "ecs_subnet_ids" {
   type        = list(string)
 }
 
-variable "ecr_repo_tag" {
-  type        = string
-  description = "The tag to identify and pull the image in ECR repo"
-  default     = "latest"
-}
-
 variable "logs_cloudwatch_group_arn" {
   description = "CloudWatch log group arn for container logs"
   type        = string
@@ -70,6 +43,12 @@ variable "ecs_cluster_arn" {
 variable "ecs_desired_count" {
   description = "Desired task count for ECS service"
   type        = number
+}
+
+variable "tags" {
+  type        = map(any)
+  description = "Additional tags to apply."
+  default     = {}
 }
 
 # GitHub Runner Variables

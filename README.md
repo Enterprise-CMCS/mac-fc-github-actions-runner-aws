@@ -55,22 +55,6 @@ All of the specified resources in the IAM policy do not have to exist prior to t
             "Resource": "*"
         },
         {
-            "Sid": "ECRRepositoriesActions",
-            "Effect": "Allow",
-            "Action": [
-                "ecr:CompleteLayerUpload",
-                "ecr:DescribeRepositories",
-                "ecr:ListImages",
-                "ecr:DescribeImages",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:GetLifecyclePolicy",
-                "ecr:InitiateLayerUpload",
-                "ecr:PutImage",
-                "ecr:UploadLayerPart"
-            ],
-            "Resource": "arn:aws:ecr:$AWS_REGION:$AWS_ACCOUNT_ID:repository/github-runner"
-        },
-        {
             "Sid": "ECSClusterActions",
             "Effect": "Allow",
             "Action": [
@@ -114,19 +98,13 @@ This module supports the following features:
 
 ```hcl
 module "github-actions-runner-aws" {
-  source = "github.com/cmsgov/github-actions-runner-aws?ref=v1.0.0"
-
-  # ECR variables
-  container_name          = "github-runner"
-  allowed_read_principals = "arn:aws:iam::123456789012:root"
-  ci_user_arn             = "arn:aws:iam::123456789012:user/ci-user"
+  source = "github.com/cmsgov/github-actions-runner-aws?ref=v2.0.0"
 
   # ECS variables
   environment               = "dev"
   ecs_desired_count         = 0
   ecs_vpc_id                = "${vpc.id}"
   ecs_subnet_ids            = "${vpc.private_subnets.id}"
-  ecr_repo_tag              = "latest"
   logs_cloudwatch_group_arn = "${cloudwatch_group_arn.arn}"
 
   # GitHub Runner variables
@@ -156,8 +134,6 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 
 | Name | Description |
 |------|---------|
-| container_name | ECR container name |
-| allowed_read_principals | Additional tags to apply |
 | ci_user_arn | ARN for CI user which has read/write permissions |
 | environment | Environment name (used in naming resources) |
 | ecs_desired_count | Sets the default desired count for task definitions within the ECS service |
@@ -175,8 +151,6 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
 | ecs_cluster_arn | "" | ECS cluster ARN to use for running this profile |
 | github_repo_owner | "CMSgov" | The name of the Github repo owner. |
-| lifecycle_policy | "" | ECR repository lifecycle policy document. Used to override the default policy. |
-| scan_on_push | true | Scan image on push to repo. |
 | tags | {} | Additional tags to apply |
 
 ### Outputs

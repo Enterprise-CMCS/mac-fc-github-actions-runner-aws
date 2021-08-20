@@ -36,7 +36,7 @@ on:
 name: sample workflow
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: github-runner
+  ECR_REPOSITORY: github-actions-runner
   IMAGE_TAG: latest
   CONTAINER_NAME: dev-mac-fc-infra
   TASK_DEFINITION: github-runner-dev

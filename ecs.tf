@@ -134,16 +134,6 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 
   statement {
     actions = [
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:BatchGetImage",
-    ]
-
-    resources = [aws_ecr_repository.main.arn]
-  }
-
-  statement {
-    actions = [
       "secretsmanager:GetSecretValue",
     ]
     resources = [
@@ -191,7 +181,7 @@ resource "aws_ecs_task_definition" "runner_def" {
   container_definitions = templatefile("${path.module}/container-definitions.tpl",
     {
       environment               = var.environment,
-      ecr_repo_url              = aws_ecr_repository.main.repository_url,
+      ecr_repo_url              = var.ecr_repo_url,
       ecr_repo_tag              = var.ecr_repo_tag,
       awslogs_group             = local.awslogs_group,
       awslogs_region            = data.aws_region.current.name,
