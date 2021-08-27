@@ -1,5 +1,5 @@
 locals {
-  awslogs_group    = split(":", var.logs_cloudwatch_group_arn)[6]
+  awslogs_group    = split(":", aws_cloudwatch_log_group.main.arn)[6]
   cluster_arn      = var.ecs_cluster_arn != "" ? var.ecs_cluster_arn : aws_ecs_cluster.github-runner[0].arn
   cluster_provided = var.ecs_cluster_arn != "" ? true : false
 }
@@ -203,9 +203,11 @@ resource "aws_ecs_service" "actions-runner" {
     security_groups = [aws_security_group.ecs_sg.id]
   }
 
-  # github actions workflows manages changes to the task defintion, so we
-  # should ignore those changes in terraform
+  # we ignore changes to the task_definition and desired_count because
+  # github actions workflows manages changes to the task definition and
+  # scales up and down the desired count accordingly
+
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [task_definition,desired_count]
   }
 }

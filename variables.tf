@@ -29,11 +29,6 @@ variable "ecs_subnet_ids" {
   type        = list(string)
 }
 
-variable "logs_cloudwatch_group_arn" {
-  description = "CloudWatch log group arn for container logs"
-  type        = string
-}
-
 variable "ecs_cluster_arn" {
   description = "ECS cluster ARN to use for running this profile"
   type        = string
@@ -43,12 +38,21 @@ variable "ecs_cluster_arn" {
 variable "ecs_desired_count" {
   description = "Desired task count for ECS service"
   type        = number
+  default     = 0
 }
 
 variable "tags" {
   type        = map(any)
   description = "Additional tags to apply."
   default     = {}
+}
+
+# Cloudwatch Variables
+
+variable "cloudwatch_log_retention" {
+  description = "Number of days to retain logs"
+  type        = number
+  default     = 731
 }
 
 # GitHub Runner Variables
