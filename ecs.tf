@@ -208,6 +208,6 @@ resource "aws_ecs_service" "actions-runner" {
   # scales up and down the desired count accordingly
 
   lifecycle {
-    ignore_changes = [task_definition,desired_count]
+    ignore_changes = [task_definition, desired_count]
   }
 }
