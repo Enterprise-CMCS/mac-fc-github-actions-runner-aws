@@ -61,5 +61,14 @@ data "aws_iam_policy_document" "cloudwatch_logs_allow_kms" {
       "kms:Describe*"
     ]
     resources = ["*"]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+
+      values = [
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.environment}/github-runner",
+      ]
+    }
   }
 }
