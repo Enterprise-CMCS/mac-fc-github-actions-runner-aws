@@ -105,7 +105,7 @@ The `entrypoint.sh` script is what sets-up the docker image to act as a runner, 
 
 ## Terraform Module
 
-This repository contains a Terraform module to deploy an ECR repo, ECS cluster, and ECS service in support of automating deployment of ephemeral self-hosted Github Actions runners within AWS.
+This repository contains a Terraform module to deploy an ECS cluster, ECS service, and log to Cloudwatch in support of automating deployment of ephemeral self-hosted Github Actions runners within AWS.
 
 This module supports the following features:
 
@@ -119,15 +119,12 @@ module "github-actions-runner-aws" {
   source = "github.com/cmsgov/github-actions-runner-aws?ref=v2.0.0"
 
   # ECS variables
-  environment               = "dev"
-  ecs_desired_count         = 0
+  environment               = "${environment}"
   ecs_vpc_id                = "${vpc.id}"
   ecs_subnet_ids            = "${vpc.private_subnets.id}"
-  logs_cloudwatch_group_arn = "${cloudwatch_group_arn.arn}"
 
   # GitHub Runner variables
   personal_access_token_arn = "${secretsmanager.token.arn}"
-  github_repo_owner         = "${repo_owner}"
   github_repo_name          = "${repo_name}"
 }
 ```
@@ -154,20 +151,20 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 |------|---------|
 | ci_user_arn | ARN for CI user which has read/write permissions |
 | environment | Environment name (used in naming resources) |
-| ecs_desired_count | Sets the default desired count for task definitions within the ECS service |
 | ecs_vpc_id | VPC ID to be used by ECS |
 | ecs_subnet_ids | Subnet IDs for the ECS tasks. |
 | logs_cloudwatch_group_arn | CloudWatch log group ARN for container logs |
 | personal_access_token_arn | AWS SecretsManager ARN for GitHub personal access token |
-| github_repo_owner | The name of the Github repo owner |
 | github_repo_name | The Github repository name |
 
 ### Optional Parameters
 
 | Name | Default Value | Description |
 |------|---------|---------|
+| cloudwatch_log_retention | 731 | Number of days to retain Cloudwatch logs |
 | ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
 | ecs_cluster_arn | "" | ECS cluster ARN to use for running this profile |
+| ecs_desired_count | 0 | Sets the default desired count for task definitions within the ECS service |
 | github_repo_owner | "CMSgov" | The name of the Github repo owner. |
 | tags | {} | Additional tags to apply |
 
