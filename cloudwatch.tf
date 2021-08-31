@@ -67,7 +67,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_allow_kms" {
       variable = "kms:EncryptionContext:aws:logs:arn"
 
       values = [
-        aws_cloudwatch_log_group.main.arn,
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.environment}/github-runner",
       ]
     }
   }
