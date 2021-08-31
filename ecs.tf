@@ -121,7 +121,9 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
       "logs:PutLogEvents",
     ]
 
-    resources = ["${var.logs_cloudwatch_group_arn}:*"]
+    resources = [
+      "${aws_cloudwatch_log_group.main.arn}:*"
+    ]
   }
 
   statement {
