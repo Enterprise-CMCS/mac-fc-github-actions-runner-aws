@@ -166,6 +166,7 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | ecs_cluster_arn | "" | ECS cluster ARN to use for running this profile |
 | ecs_desired_count | 0 | Sets the default desired count for task definitions within the ECS service |
 | github_repo_owner | "CMSgov" | The name of the Github repo owner. |
+| prevent_cloudwatch_log_destroy | true | Lifecycle policy to prevent destruction of Cloudwatch logs |
 | tags | {} | Additional tags to apply |
 
 ### Outputs

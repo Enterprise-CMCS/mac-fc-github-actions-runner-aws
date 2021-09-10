@@ -42,12 +42,14 @@ data "aws_iam_policy_document" "events_assume_role_policy" {
 # SG - ECS
 
 resource "aws_security_group" "ecs_sg" {
-  name        = "ecs-${var.environment}-${var.github_repo_name}-runner"
-  description = "${var.environment}-${var.github_repo_name}-runner container security group"
+  name        = "ecs-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner"
+  description = "${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner container security group"
   vpc_id      = var.ecs_vpc_id
 
   tags = {
-    Name        = "ecs-${var.environment}-${var.github_repo_name}-runner"
+    Name        = "ecs-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner"
+    GHOwner     = var.github_repo_owner
+    GHRepo      = var.github_repo_name
     Environment = var.environment
     Automation  = "Terraform"
   }
@@ -91,7 +93,7 @@ data "aws_iam_policy_document" "cloudwatch_target_role_policy_doc" {
 }
 
 resource "aws_iam_role" "cloudwatch_target_role" {
-  name               = "cw-target-role-${var.environment}-${var.github_repo_name}-runner"
+  name               = "cw-target-role-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner"
   description        = "Role allowing CloudWatch Events to run the task"
   assume_role_policy = data.aws_iam_policy_document.events_assume_role_policy.json
 }
@@ -103,7 +105,7 @@ resource "aws_iam_role_policy" "cloudwatch_target_role_policy" {
 }
 
 resource "aws_iam_role" "task_role" {
-  name               = "ecs-task-role-${var.environment}-${var.github_repo_name}-runner"
+  name               = "ecs-task-role-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner"
   description        = "Role allowing container definition to execute"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume_role_policy.json
 }
@@ -159,9 +161,12 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 resource "aws_ecs_cluster" "github-runner" {
   count = local.cluster_provided ? 0 : 1
 
-  name = "github-runner"
+  name = "github-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
 
   tags = {
+    Name        = "github-runner"
+    GHOwner     = var.github_repo_owner
+    GHRepo      = var.github_repo_name
     Environment = var.environment
     Automation  = "Terraform"
   }
@@ -171,7 +176,7 @@ resource "aws_ecs_cluster" "github-runner" {
 }
 
 resource "aws_ecs_task_definition" "runner_def" {
-  family        = "github-runner-${var.environment}"
+  family        = "github-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
   network_mode  = "awsvpc"
   task_role_arn = aws_iam_role.task_role.arn
 
@@ -195,7 +200,7 @@ resource "aws_ecs_task_definition" "runner_def" {
 }
 
 resource "aws_ecs_service" "actions-runner" {
-  name            = "github-actions-runner"
+  name            = "github-actions-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
   cluster         = local.cluster_arn
   task_definition = aws_ecs_task_definition.runner_def.arn
   desired_count   = var.ecs_desired_count

@@ -55,6 +55,12 @@ variable "cloudwatch_log_retention" {
   default     = 731
 }
 
+variable "prevent_cloudwatch_log_destroy" {
+  description = "Lifecycle policy to prevent destruction of Cloudwatch logs"
+  type        = bool
+  default     = true
+}
+
 # GitHub Runner Variables
 
 variable "personal_access_token_arn" {

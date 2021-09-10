@@ -1,17 +1,19 @@
 resource "aws_cloudwatch_log_group" "main" {
-  name              = "/ecs/${var.environment}/github-runner"
+  name              = "/ecs/${var.environment}/github-runner-${var.github_repo_owner}-${var.github_repo_name}"
   retention_in_days = var.cloudwatch_log_retention
 
   kms_key_id = aws_kms_key.log_enc_key.arn
 
   tags = {
     Name        = "github-runner"
+    GHOwner     = var.github_repo_owner
+    GHRepo      = var.github_repo_name
     Environment = var.environment
     Automation  = "Terraform"
   }
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = var.prevent_cloudwatch_log_destroy
   }
 
 }
