@@ -12,9 +12,9 @@ resource "aws_cloudwatch_log_group" "main" {
     Automation  = "Terraform"
   }
 
-  lifecycle {
-    prevent_destroy = var.prevent_cloudwatch_log_destroy
-  }
+#  lifecycle {
+#    prevent_destroy = false
+#  }
 
 }
 
