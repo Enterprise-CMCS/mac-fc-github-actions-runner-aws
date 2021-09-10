@@ -44,6 +44,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
       - name: Run Dockle for docker best practices
         uses: hands-lab/dockle-action@v1
+        env:
+          DOCKLE_ACCEPT_FILE_EXTENSIONS: pem
         with:
           image: '${{steps.login-ecr.outputs.registry}}/${{env.ECR_REPOSITORY}}:${{env.HASH}}'
           exit-code: '1'
