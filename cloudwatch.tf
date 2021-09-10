@@ -12,10 +12,6 @@ resource "aws_cloudwatch_log_group" "main" {
     Automation  = "Terraform"
   }
 
-#  lifecycle {
-#    prevent_destroy = false
-#  }
-
 }
 
 resource "aws_kms_key" "log_enc_key" {
