@@ -42,12 +42,12 @@ data "aws_iam_policy_document" "events_assume_role_policy" {
 # SG - ECS
 
 resource "aws_security_group" "ecs_sg" {
-  name        = "ecs-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner"
-  description = "${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner container security group"
+  name        = "ecs-gh-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
+  description = "gh-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name} container security group"
   vpc_id      = var.ecs_vpc_id
 
   tags = {
-    Name        = "ecs-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}-runner"
+    Name        = "ecs-gh-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
     GHOwner     = var.github_repo_owner
     GHRepo      = var.github_repo_name
     Environment = var.environment
@@ -161,7 +161,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 resource "aws_ecs_cluster" "github-runner" {
   count = local.cluster_provided ? 0 : 1
 
-  name = "github-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
+  name = "gh-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
 
   tags = {
     Name        = "github-runner"
@@ -176,7 +176,7 @@ resource "aws_ecs_cluster" "github-runner" {
 }
 
 resource "aws_ecs_task_definition" "runner_def" {
-  family        = "github-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
+  family        = "gh-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
   network_mode  = "awsvpc"
   task_role_arn = aws_iam_role.task_role.arn
 
@@ -200,7 +200,7 @@ resource "aws_ecs_task_definition" "runner_def" {
 }
 
 resource "aws_ecs_service" "actions-runner" {
-  name            = "github-actions-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
+  name            = "gh-runner-${var.environment}-${var.github_repo_owner}-${var.github_repo_name}"
   cluster         = local.cluster_arn
   task_definition = aws_ecs_task_definition.runner_def.arn
   desired_count   = var.ecs_desired_count
