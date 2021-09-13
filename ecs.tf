@@ -209,7 +209,7 @@ resource "aws_ecs_task_definition" "runner_def" {
 
 resource "aws_ecs_service" "actions-runner" {
   name            = "gh-runner-${local.gh_name_hash}"
-  cluster         = aws_ecs_cluster.github-runner[0].arn
+  cluster         = aws_ecs_cluster.github-runner.arn
   task_definition = aws_ecs_task_definition.runner_def.arn
   desired_count   = var.ecs_desired_count
   launch_type     = "FARGATE"
