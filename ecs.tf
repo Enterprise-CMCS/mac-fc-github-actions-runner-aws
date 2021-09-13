@@ -1,6 +1,6 @@
 locals {
-  gh_name_hash     = uuidv5("3505f3f5-f7e4-46df-a7b0-42f7472ebea5", "${var.environment}-${var.github_repo_owner}-${var.github_repo_name}")
-  awslogs_group    = split(":", aws_cloudwatch_log_group.main.arn)[6]
+  gh_name_hash  = uuidv5("3505f3f5-f7e4-46df-a7b0-42f7472ebea5", "${var.environment}-${var.github_repo_owner}-${var.github_repo_name}")
+  awslogs_group = split(":", aws_cloudwatch_log_group.main.arn)[6]
 }
 
 data "aws_partition" "current" {}
