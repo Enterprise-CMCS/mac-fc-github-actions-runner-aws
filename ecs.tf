@@ -1,8 +1,6 @@
 locals {
   gh_name_hash     = uuidv5("3505f3f5-f7e4-46df-a7b0-42f7472ebea5", "${var.environment}-${var.github_repo_owner}-${var.github_repo_name}")
   awslogs_group    = split(":", aws_cloudwatch_log_group.main.arn)[6]
-  cluster_arn      = var.ecs_cluster_arn != "" ? var.ecs_cluster_arn : aws_ecs_cluster.github-runner[0].arn
-  cluster_provided = var.ecs_cluster_arn != "" ? true : false
 }
 
 data "aws_partition" "current" {}
@@ -160,7 +158,6 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 # ECS task details
 
 resource "aws_ecs_cluster" "github-runner" {
-  count = local.cluster_provided ? 0 : 1
 
   name = "gh-runner-${local.gh_name_hash}"
 
@@ -212,7 +209,7 @@ resource "aws_ecs_task_definition" "runner_def" {
 
 resource "aws_ecs_service" "actions-runner" {
   name            = "gh-runner-${local.gh_name_hash}"
-  cluster         = local.cluster_arn
+  cluster         = aws_ecs_cluster.github-runner[0].arn
   task_definition = aws_ecs_task_definition.runner_def.arn
   desired_count   = var.ecs_desired_count
   launch_type     = "FARGATE"
