@@ -1,5 +1,5 @@
 resource "aws_cloudwatch_log_group" "main" {
-  name              = "/ecs/${var.environment}/gh-runner-${var.github_repo_owner}-${var.github_repo_name}"
+  name              = "/ecs/${var.environment}/gh-runner-${local.gh_name_hash}"
   retention_in_days = var.cloudwatch_log_retention
 
   kms_key_id = aws_kms_key.log_enc_key.arn
