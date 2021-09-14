@@ -1,17 +1,15 @@
 resource "aws_cloudwatch_log_group" "main" {
-  name              = "/ecs/${var.environment}/github-runner"
+  name              = "/ecs/${var.environment}/gh-runner-${local.gh_name_hash}"
   retention_in_days = var.cloudwatch_log_retention
 
   kms_key_id = aws_kms_key.log_enc_key.arn
 
   tags = {
     Name        = "github-runner"
+    GHOwner     = var.github_repo_owner
+    GHRepo      = var.github_repo_name
     Environment = var.environment
     Automation  = "Terraform"
-  }
-
-  lifecycle {
-    prevent_destroy = true
   }
 
 }
@@ -67,7 +65,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_allow_kms" {
       variable = "kms:EncryptionContext:aws:logs:arn"
 
       values = [
-        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.environment}/github-runner",
+        "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.environment}/gh-runner*",
       ]
     }
   }

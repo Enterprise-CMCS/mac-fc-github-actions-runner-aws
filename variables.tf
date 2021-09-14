@@ -29,12 +29,6 @@ variable "ecs_subnet_ids" {
   type        = list(string)
 }
 
-variable "ecs_cluster_arn" {
-  description = "ECS cluster ARN to use for running this profile"
-  type        = string
-  default     = ""
-}
-
 variable "ecs_desired_count" {
   description = "Desired task count for ECS service"
   type        = number

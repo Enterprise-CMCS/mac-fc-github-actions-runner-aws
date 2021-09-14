@@ -76,8 +76,8 @@ All of the specified resources in the IAM policy do not have to exist prior to t
                 "ecs:UpdateService"
             ],
             "Resource": [
-                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:cluster/github-runner",
-                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:service/github-runner/github-actions-runner"
+                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:cluster/gh-runner*",
+                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:service/gh-runner*"
             ]
         }
     ]
@@ -163,7 +163,6 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 |------|---------|---------|
 | cloudwatch_log_retention | 731 | Number of days to retain Cloudwatch logs |
 | ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
-| ecs_cluster_arn | "" | ECS cluster ARN to use for running this profile |
 | ecs_desired_count | 0 | Sets the default desired count for task definitions within the ECS service |
 | github_repo_owner | "CMSgov" | The name of the Github repo owner. |
 | tags | {} | Additional tags to apply |
