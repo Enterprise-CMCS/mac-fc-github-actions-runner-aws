@@ -1,6 +1,6 @@
 [
   {
-    "name": "${environment}-${github_repo_name}",
+    "name": "gh-runner-${gh_name_hash}",
     "image": "${ecr_repo_url}:${ecr_repo_tag}",
     "cpu": 128,
     "memory": 1024,
