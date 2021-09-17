@@ -103,10 +103,6 @@ The items to configure are:
   - AWS_REGION - your AWS region, e.g. us-east-1
   - ECR_REPOSITORY - the name of the ECR repository in which you are housing your self-hosted runner images
   - IMAGE_TAG - the unique tag of a specific image to pull from your ECR repository. For example, "latest", which is updated each time a new image is pushed to ECR.
-  - CONTAINER_NAME: The name of the container defined in the containerDefinitions section of the ECS task definition
-  - TASK_DEFINITION: The name of the task definition family to pull
-  - SERVICE: The name of the ECS service to deploy to
-  - CLUSTER: The name of the ECS service's cluster
   - DESIRED_COUNT: The number of runners you will need. For example, if you have 3 jobs following the start-runner task, you should populate this with the value 3.
 
 - **Your jobs**. Any existing workflows that you have that you wish to run on a self-hosted runner can be run by simply changing the `runs-on` argument from a GitHub hosted tag (e.g. `ubuntu-latest`) to `self-hosted`.
