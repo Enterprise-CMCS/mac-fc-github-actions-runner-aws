@@ -33,74 +33,65 @@ on:
   push:
     branches: [main]
 
-name: sample workflow
-env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: github-actions-runner
-  IMAGE_TAG: latest
-  CONTAINER_NAME: dev-mac-fc-infra
-  TASK_DEFINITION: github-runner-dev
-  SERVICE: github-actions-runner
-  CLUSTER: github-runner
-  DESIRED_COUNT: 3
+name: internal runners test
+
 jobs:
   start-runner:
     name: Provision self-hosted runners
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: TrussWorks Provisioning Action
+        uses: trussworks/ecs-scaleup@v3.0.0
+        id: truss
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Create ENV variable for image
-        id: image-name
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-        run: echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-      - name: Grab task definition
-        id: get-task-def
-        run: |
-          aws ecs describe-task-definition \
-          --task-definition ${{ env.TASK_DEFINITION }} \
-          --query taskDefinition > task-definition.json
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.image-name.outputs.image }}
-      - name: Increment ECS Service Desired Count
-        run: aws ecs update-service --service ${{ env.SERVICE }} --cluster ${{ env.CLUSTER }} --desired-count ${{ env.DESIRED_COUNT }}
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.SERVICE }}
-          cluster: ${{ env.CLUSTER }}
-          wait-for-service-stability: true
-  ## Your Jobs Here (the number of jobs you have should match the DESIRED_COUNT variable)
+          aws-region: us-east-1
+          ecr-repository: github-runner
+          image-tag: latest
+          repository-hash:
+          desired-count: 3
+
+  test_self_hosted:
+    name: Testing self-hosted tag
+    needs: start-runner
+    runs-on: self-hosted
+    steps:
+      - name: step 1
+        run: echo "Hello World!"
+
+  test_internal_tools:
+    name: Testing internal tool connectivity
+    needs: start-runner
+    runs-on: self-hosted
+    steps:
+      - name: curl selenium
+        run: curl --connect-timeout 5 https://selenium.cloud.cms.gov
+      - name: curl artifactory
+        run: curl --connect-timeout 5 https://artifactory.cloud.cms.gov/ui/packages
+
+  test_hosted_tools:
+    name: Testing runner directories
+    needs: start-runner
+    runs-on: self-hosted
+    steps:
+      - name: ls /opt/hostedtoolcache
+        run: ls -al /opt/hostedtoolcache
+      - name: ls /home/runner
+        run: ls -al /home/runner
+
   remove-runners:
     name: Deprovision self-hosted runners
-    needs: [start-runner, YOUR_JOB_NAMES_HERE]
+    needs: [start-runner, test_self_hosted, test_internal_tools, test_hosted_tools]
     runs-on: ubuntu-latest
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: TrussWorks Deprovisioning Action
+        uses: trussworks/ecs-scaledown@v2.0.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Decrement ECS Service Desired Count
-        run: aws ecs update-service --service ${{ env.SERVICE }} --cluster ${{ env.CLUSTER }} --desired-count 0
+          aws-region: "us-east-1"
+          repository-hash:
 ```
 
 The items to configure are:
@@ -112,11 +103,8 @@ The items to configure are:
   - AWS_REGION - your AWS region, e.g. us-east-1
   - ECR_REPOSITORY - the name of the ECR repository in which you are housing your self-hosted runner images
   - IMAGE_TAG - the unique tag of a specific image to pull from your ECR repository. For example, "latest", which is updated each time a new image is pushed to ECR.
-  - CONTAINER_NAME: The name of the container defined in the containerDefinitions section of the ECS task definition
-  - TASK_DEFINITION: The name of the task definition family to pull
-  - SERVICE: The name of the ECS service to deploy to
-  - CLUSTER: The name of the ECS service's cluster
   - DESIRED_COUNT: The number of runners you will need. For example, if you have 3 jobs following the start-runner task, you should populate this with the value 3.
+  - REPOSITORY_HASH: this is the unique UUID generated based off of the environment, Github owner, and Github repo name - you can plug this in to automatically handle the naming scheme for multiple resources. An example is `aa50c18a-3141-506e-a0da-b96b2e12048e`. This hash is generated when the Terraform is deployed. You can also fetch this hash from the ECS console in your AWS environment. The cluster will be named in the format `gh-runner-{HASH}`.
 
 - **Your jobs**. Any existing workflows that you have that you wish to run on a self-hosted runner can be run by simply changing the `runs-on` argument from a GitHub hosted tag (e.g. `ubuntu-latest`) to `self-hosted`.
 - **The `needs` variable** under the `remove-runners` job. In order to ensure that the runners are removed following the completion of the tasks and not any sooner, you must populate the list of steps that the `remove-runners` job depends on with the full list of your jobs.
