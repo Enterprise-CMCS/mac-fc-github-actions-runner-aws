@@ -104,7 +104,7 @@ The items to configure are:
   - ECR_REPOSITORY - the name of the ECR repository in which you are housing your self-hosted runner images
   - IMAGE_TAG - the unique tag of a specific image to pull from your ECR repository. For example, "latest", which is updated each time a new image is pushed to ECR.
   - DESIRED_COUNT: The number of runners you will need. For example, if you have 3 jobs following the start-runner task, you should populate this with the value 3.
-  - REPOSITORY_HASH: this is the unique UUID generated based off of the environment, Github owner, and Github repo name - you can plug this in to automatically handle the naming scheme for multiple resources. An example is `aa50c18a-3141-506e-a0da-b96b2e12048e`.
+  - REPOSITORY_HASH: this is the unique UUID generated based off of the environment, Github owner, and Github repo name - you can plug this in to automatically handle the naming scheme for multiple resources. An example is `aa50c18a-3141-506e-a0da-b96b2e12048e`. This hash is generated when the Terraform is deployed. You can also fetch this hash from the ECS console in your AWS environment. The cluster will be named in the format `gh-runner-{HASH}`.
 
 - **Your jobs**. Any existing workflows that you have that you wish to run on a self-hosted runner can be run by simply changing the `runs-on` argument from a GitHub hosted tag (e.g. `ubuntu-latest`) to `self-hosted`.
 - **The `needs` variable** under the `remove-runners` job. In order to ensure that the runners are removed following the completion of the tasks and not any sooner, you must populate the list of steps that the `remove-runners` job depends on with the full list of your jobs.
