@@ -163,7 +163,7 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
 | ecs_desired_count | 0 | Sets the default desired count for task definitions within the ECS service |
 | assign_public_ip | "false" | Choose whether to assign a public IP address to the Elastic Network Interface |
-| role_path | "/" | The path in which to create the assume roles and policies. Refer to https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html for more |
+| role_path | "/" | The path in which to create the assume roles and policies. Refer to [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html) for more |
 | permissions_boundary | "" | ARN of the policy that is used to set the permissions boundary for the role |
 | github_repo_owner | "CMSgov" | The name of the Github repo owner. |
 | tags | {} | Additional tags to apply |
