@@ -149,11 +149,9 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 
 | Name | Description |
 |------|---------|
-| ci_user_arn | ARN for CI user which has read/write permissions |
 | environment | Environment name (used in naming resources) |
 | ecs_vpc_id | VPC ID to be used by ECS |
 | ecs_subnet_ids | Subnet IDs for the ECS tasks. |
-| logs_cloudwatch_group_arn | CloudWatch log group ARN for container logs |
 | personal_access_token_arn | AWS SecretsManager ARN for GitHub personal access token |
 | github_repo_name | The Github repository name |
 
@@ -164,6 +162,9 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | cloudwatch_log_retention | 731 | Number of days to retain Cloudwatch logs |
 | ecr_repo_tag | "latest" | The tag to identify and pull the image in ECR repo |
 | ecs_desired_count | 0 | Sets the default desired count for task definitions within the ECS service |
+| assign_public_ip | "false" | Choose whether to assign a public IP address to the Elastic Network Interface |
+| role_path | "/" | The path in which to create the assume roles and policies. Refer to [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html) for more |
+| permissions_boundary | "" | ARN of the policy that is used to set the permissions boundary for the role |
 | github_repo_owner | "CMSgov" | The name of the Github repo owner. |
 | tags | {} | Additional tags to apply |
 
