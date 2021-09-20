@@ -66,3 +66,21 @@ variable "github_repo_name" {
   description = "the name of the repository"
   type        = string
 }
+
+variable "assign_public_ip" {
+  description = "Choose whether to assign a public IP address to the Elastic Network Interface."
+  type        = bool
+  default     = false
+}
+
+variable "role_path" {
+  description = "The path in which to create the assume roles and policies. Refer to https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html for more"
+  type        = string
+  default     = "/"
+}
+
+variable "permissions_boundary" {
+  description = "ARN of the policy that is used to set the permissions boundary for the role"
+  type        = string
+  default     = ""
+}

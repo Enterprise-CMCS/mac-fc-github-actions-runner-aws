@@ -122,6 +122,9 @@ module "github-actions-runner-aws" {
   environment               = "${environment}"
   ecs_vpc_id                = "${vpc.id}"
   ecs_subnet_ids            = "${vpc.private_subnets.id}"
+  assign_public_ip     = // optional, defaults to false
+  role_path            = // optional, defaults to "/"
+  permissions_boundary = // optional, defaults to ""
 
   # GitHub Runner variables
   personal_access_token_arn = "${secretsmanager.token.arn}"
