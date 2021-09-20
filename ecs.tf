@@ -92,9 +92,9 @@ data "aws_iam_policy_document" "cloudwatch_target_role_policy_doc" {
 }
 
 resource "aws_iam_role" "cloudwatch_target_role" {
-  name               = "cw-target-role-${local.gh_name_hash}"
-  description        = "Role allowing CloudWatch Events to run the task"
-  assume_role_policy = data.aws_iam_policy_document.events_assume_role_policy.json
+  name                 = "cw-target-role-${local.gh_name_hash}"
+  description          = "Role allowing CloudWatch Events to run the task"
+  assume_role_policy   = data.aws_iam_policy_document.events_assume_role_policy.json
   path                 = var.role_path
   permissions_boundary = var.permissions_boundary
 }
@@ -106,9 +106,9 @@ resource "aws_iam_role_policy" "cloudwatch_target_role_policy" {
 }
 
 resource "aws_iam_role" "task_role" {
-  name               = "ecs-task-role-${local.gh_name_hash}"
-  description        = "Role allowing container definition to execute"
-  assume_role_policy = data.aws_iam_policy_document.ecs_assume_role_policy.json
+  name                 = "ecs-task-role-${local.gh_name_hash}"
+  description          = "Role allowing container definition to execute"
+  assume_role_policy   = data.aws_iam_policy_document.ecs_assume_role_policy.json
   path                 = var.role_path
   permissions_boundary = var.permissions_boundary
 }
@@ -218,8 +218,8 @@ resource "aws_ecs_service" "actions-runner" {
   desired_count   = var.ecs_desired_count
   launch_type     = "FARGATE"
   network_configuration {
-    subnets         = [for s in var.ecs_subnet_ids : s]
-    security_groups = [aws_security_group.ecs_sg.id]
+    subnets          = [for s in var.ecs_subnet_ids : s]
+    security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = var.assign_public_ip
   }
 
