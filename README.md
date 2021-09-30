@@ -76,13 +76,17 @@ All of the specified resources in the IAM policy do not have to exist prior to t
                 "ecs:UpdateService"
             ],
             "Resource": [
-                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:cluster/gh-runner*",
-                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:service/gh-runner*"
+                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:cluster/gh-runner-*",
+                "arn:aws:ecs:$AWS_REGION:$AWS_ACCOUNT_ID:service/gh-runner-*"
             ]
         }
     ]
 }
 ```
+
+#### NOTE: Including a path to IAM roles
+
+Should you decide to populate the optional `path` variable in this module, ensure that the Resource the iam:GetRole and PassRole are enabled on includes the path you specify. e.g. `"arn:aws:iam::$AWS_ACCOUNT_ID:role/path/you/specified/ecs-task-role-*"`
 
 ## Local Github Token Testing
 
