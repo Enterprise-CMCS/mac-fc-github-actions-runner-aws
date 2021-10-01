@@ -20,6 +20,7 @@ This module uses an existing ECR repository in AWS, and so does not provision on
     * Request permission for the robot user within Github
     * Create an access token for the robot user within Github
     * Store the access token in AWS Secrets Manager
+        * The secret's name must start with `github-runner` due to IAM restrictions on the ecs-task-role
 2. Set up an IAM user in AWS with the necessary permissions to support the docker-build.yml workflow script included. See `IAM User Permissions` section below for details.
     * Once you have your user, be sure to add the access key details to your repository's Secrets
 3. Provision the Terraform module in this repository.
