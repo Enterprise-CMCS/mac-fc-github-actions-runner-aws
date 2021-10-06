@@ -141,6 +141,16 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 
   statement {
     actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+    ]
+
+    resources = ["arn:aws:ecr:us-east-1:037370603820:repository/github-actions-runner"]
+  }
+
+  statement {
+    actions = [
       "secretsmanager:GetSecretValue",
     ]
     resources = [
