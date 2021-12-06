@@ -6,7 +6,14 @@ apt-get update
 apt-get -qq -y install --no-install-recommends \
     ca-certificates curl tar git \
     libyaml-dev build-essential jq uuid-runtime \
-    unzip
+    unzip xvfb gnupg
+
+# now that we have curl, add the signing key and chrome repo to apt-get
+curl -sL https://dl-ssl.google.com/linux/linux_signing_key.pub -o key.pub
+apt-key add key.pub
+sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+apt-get update
+apt-get -qq -y install --no-install-recommends google-chrome-stable
 
 # Install our user and create directory to install actions-runner and the hostedtoolcache
 addgroup --gid 1000 "${RUNGROUP}" && adduser --uid 1000 --ingroup "${RUNGROUP}" --shell /bin/bash "${RUNUSER}"
