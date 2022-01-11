@@ -3,7 +3,7 @@ FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RUNUSER=runner
 ARG RUNGROUP=runner
-ARG ACTIONS_VERSION="2.285.1"
+ARG ACTIONS_VERSION="2.286.0"
 
 
 COPY build.sh /tmp
