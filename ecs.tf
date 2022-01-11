@@ -194,12 +194,14 @@ resource "aws_ecs_task_definition" "runner_def" {
   task_role_arn = aws_iam_role.task_role.arn
 
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "1024"
+  cpu                      = var.task_cpu
+  memory                   = var.task_memory
   execution_role_arn       = aws_iam_role.task_role.arn
 
   container_definitions = templatefile("${path.module}/container-definitions.tpl",
     {
+      container_cpu             = var.container_cpu,
+      container_memory          = var.container_memory,
       gh_name_hash              = local.gh_name_hash,
       ecr_repo_url              = var.ecr_repo_url,
       ecr_repo_tag              = var.ecr_repo_tag,

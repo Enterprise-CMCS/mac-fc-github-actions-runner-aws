@@ -2,8 +2,8 @@
   {
     "name": "gh-runner-${gh_name_hash}",
     "image": "${ecr_repo_url}:${ecr_repo_tag}",
-    "cpu": 128,
-    "memory": 1024,
+    "cpu": ${container_cpu},
+    "memory": ${container_memory},
     "essential": true,
     "portMappings": [],
     "environment": [
