@@ -92,7 +92,7 @@ variable "task_cpu" {
 }
 
 variable "task_memory" {
-  description = "The ECS Task memroy size"
+  description = "The ECS Task memory size"
   type        = number
   default     = 1024
 }
@@ -104,7 +104,7 @@ variable "container_cpu" {
 }
 
 variable "container_memory" {
-  description = "The container memroy size"
+  description = "The container memory size"
   type        = number
   default     = 1024
 }
