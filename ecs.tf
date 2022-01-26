@@ -146,7 +146,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
       "ecr:BatchGetImage",
     ]
 
-    resources = ["arn:aws:ecr:us-east-1:037370603820:repository/github-actions-runner"]
+    resources = var.ecr_repository_arns
   }
 
   statement {
