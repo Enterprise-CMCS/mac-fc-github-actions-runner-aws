@@ -12,6 +12,12 @@ variable "ecr_repo_tag" {
   default     = "latest"
 }
 
+variable "ecr_repository_arns" {
+  description = "The ECR ARNs referenced by aws_iam_policy_document task_role_policy_doc"
+  type        = list(string)
+  default     = ["arn:aws:ecr:us-east-1:037370603820:repository/github-actions-runner"]
+}
+
 # ECS variables
 
 variable "environment" {
