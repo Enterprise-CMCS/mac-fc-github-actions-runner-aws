@@ -8,7 +8,7 @@ jobs:
     env:
       DO_DEPLOY: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: engineerd/setup-kind@v0.5.0
         with:
           version: "v0.11.1"
