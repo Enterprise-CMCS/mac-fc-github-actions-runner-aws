@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           token: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
       - name: Set release version and current version variables
@@ -35,7 +35,7 @@ jobs:
           git config --global user.email "${GITHUB_ACTOR_EMAIL}"
       - name: Create Pull Request
         if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
           commit-message: Update actions runner to new version
