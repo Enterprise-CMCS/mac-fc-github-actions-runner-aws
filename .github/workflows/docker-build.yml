@@ -82,7 +82,7 @@ jobs:
             https://api.github.com/repos/CMSgov/github-actions-runner-aws/actions/runners \
           | grep "online"
       - name: Test our internal runner with call to separate workflow
-        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        uses: convictional/trigger-workflow-and-wait@v1.6.2
         with:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
