@@ -11,28 +11,19 @@ REGISTRATION_TOKEN=$(curl -s -X POST \
 
 UNIQUE_ID=$(uuidgen)
 
-# Register the runner
+# Register the runner:
+# - disable updates since we manage them manually via the container image
+#   - https://docs.github.com/en/actions/hosting-your-own-runners/autoscaling-with-self-hosted-runners#controlling-runner-software-updates-on-self-hosted-runners
+# - register as an ephemeral runner
+#   - https://docs.github.com/en/actions/hosting-your-own-runners/autoscaling-with-self-hosted-runners#using-ephemeral-runners-for-autoscaling
 ./config.sh \
       --unattended \
       --url "https://github.com/${REPO_OWNER}/${REPO_NAME}" \
       --token "${REGISTRATION_TOKEN}" \
       --name "${UNIQUE_ID}" \
       --work ../work-dir \
-      --replace
+      --replace \
+      --disableupdate \
+      --ephemeral
 
-cleanup() {
-  # give the job a second to finish
-  sleep 1
-  # Deregister the runner from github
-  REGISTRATION_TOKEN=$(curl -s -XPOST \
-      -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" \
-      "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runners/registration-token" | jq -r .token)
-  ./config.sh remove --token "${REGISTRATION_TOKEN}"
-
-  # Remove our runner work dir to clean up after ourselves
-  rm -rf ../work-dir
-}
-
-# Run cleanup upon exit. exit upon one job ran
-trap cleanup EXIT
-./run.sh --once
+./run.sh
