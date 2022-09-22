@@ -9,7 +9,8 @@ REGISTRATION_TOKEN=$(curl -s -X POST \
     -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" \
     "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runners/registration-token" | jq -r .token)
 
-UNIQUE_ID=$(uuidgen)
+# Use the RUNNER_UUID env var if it exists
+UNIQUE_ID=${RUNNER_UUID:-$(uuidgen)}
 
 # Register the runner:
 # - disable updates since we manage them manually via the container image
@@ -21,6 +22,7 @@ UNIQUE_ID=$(uuidgen)
       --url "https://github.com/${REPO_OWNER}/${REPO_NAME}" \
       --token "${REGISTRATION_TOKEN}" \
       --name "${UNIQUE_ID}" \
+      --labels "${UNIQUE_ID}" \
       --work ../work-dir \
       --replace \
       --disableupdate \
