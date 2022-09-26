@@ -88,7 +88,7 @@ jobs:
     name: Wait for the runner to be ready
     needs: set-runner-uuid
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Poll the GitHub Actions API until the runner is registered and online
         run: |
