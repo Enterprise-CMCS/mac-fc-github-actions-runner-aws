@@ -1,10 +1,8 @@
 name: Get latest GitHub Actions Runner
 
 on:
-  push:
-    branches: [bharvey-github-actor]
-  # schedule:
-  #   - cron: "40 18 * * *"
+  schedule:
+    - cron: "40 18 * * *"
 jobs:
   update-runner:
     runs-on: ubuntu-latest
@@ -13,11 +11,13 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
+
       - name: Set release version and current version variables
         id: get-versions
         run: |
           echo ::set-output name=current_tag::$(grep ACTIONS_VERSION Dockerfile | cut -d'=' -f 2 | sed -e 's/^"//' -e 's/"$//')
           echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name[1:] | tostring")
+
       - name: Change release version in Dockerfile
         if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
         id: update-version
@@ -26,15 +26,7 @@ jobs:
           NEW_VERSION: ${{ steps.get-versions.outputs.release_tag }}
         run: |
           sed -i --expression='s,"'"$OLD_VERSION"'","'"$NEW_VERSION"'",g' Dockerfile
-      # - name: set up Git
-      #   if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.ROBOT_MAC_FC_TOKEN }}
-      #     GITHUB_ACTOR_NAME: "@robot-mac-fc"
-      #     GITHUB_ACTOR_EMAIL: "robot-mac-fc@users.noreply.github.com"
-      #   run: |
-      #     git config --global user.name $GITHUB_ACTOR_NAME
-      #     git config --global user.email $GITHUB_ACTOR_EMAIL
+
       - name: Create Pull Request
         if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
         uses: peter-evans/create-pull-request@v4
