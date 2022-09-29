@@ -5,9 +5,24 @@ mkdir work-dir
 cd actions-runner
 
 # Grab a runner registration token
-REGISTRATION_TOKEN=$(curl -s -X POST \
+# https://docs.github.com/en/rest/actions/self-hosted-runners#create-a-registration-token-for-a-repository
+status_code=$(curl \
+    -s \
+    -w "%{http_code}" \
+    -o /tmp/token_response.json \
+    -X POST \
     -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" \
-    "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runners/registration-token" | jq -r .token)
+    "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runners/registration-token" \
+    )
+
+if [[ $status_code == "201" ]]
+then
+    REGISTRATION_TOKEN=$(jq -r ".token" /tmp/token_response.json)
+else
+    echo "Got status code $status_code trying to create a GitHub repo registration token."
+    echo "Response: $(cat /tmp/token_response.json)"
+    exit 1
+fi
 
 # Use the RUNNER_UUID env var if it exists
 UNIQUE_ID=${RUNNER_UUID:-$(uuidgen)}

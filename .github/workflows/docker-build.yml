@@ -80,7 +80,7 @@ jobs:
           docker run --rm \
           -e REPO_OWNER=CMSgov \
           -e REPO_NAME=github-actions-runner-aws \
-          -e PERSONAL_ACCESS_TOKEN=${{ secrets.ROBOT_MAC_FC_TOKEN}} \
+          -e PERSONAL_ACCESS_TOKEN=${{ secrets.BHARVEY_GITHUB_TOKEN}} \
           -e RUNNER_UUID=${{ needs.set-runner-uuid.outputs.runner-uuid }} \
           ${{ env.SHA_TAG }}
 
@@ -95,7 +95,7 @@ jobs:
           until \
             curl -s \
               -H "Accept: application/vnd.github.v3+json" \
-              -u robot-mac-fc:${{ secrets.ROBOT_MAC_FC_TOKEN }} \
+              -u robot-mac-fc:${{ secrets.BHARVEY_GITHUB_TOKEN }} \
               https://api.github.com/repos/CMSgov/github-actions-runner-aws/actions/runners \
             | jq -e '.runners | .[] | select(.name == "${{ needs.set-runner-uuid.outputs.runner-uuid }}") | .status == "online"' >/dev/null
           do
