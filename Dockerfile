@@ -6,6 +6,13 @@ ARG RUNGROUP=runner
 
 ARG ACTIONS_VERSION="2.297.0"
 
+RUN apt-get update \
+    && apt-get -qq -y install --no-install-recommends \
+    ca-certificates curl tar git \
+    libyaml-dev build-essential jq uuid-runtime \
+    unzip xvfb gnupg \
+    && rm -rvf /var/lib/apt/lists/*
+
 COPY build.sh /tmp
 
 RUN /tmp/build.sh

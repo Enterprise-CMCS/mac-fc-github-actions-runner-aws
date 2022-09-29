@@ -2,23 +2,27 @@
 set -ex
 
 # install dependencies
-apt-get update
-apt-get -qq -y install --no-install-recommends \
-    ca-certificates curl tar git \
-    libyaml-dev build-essential jq uuid-runtime \
-    unzip xvfb gnupg
+# apt-get update
+# apt-get -qq -y install --no-install-recommends \
+#     ca-certificates curl tar git \
+#     libyaml-dev build-essential jq uuid-runtime \
+#     unzip xvfb gnupg
 
-# now that we have curl, add the signing key and chrome repo to apt-get
-curl -sL https://dl-ssl.google.com/linux/linux_signing_key.pub -o key.pub
-apt-key add key.pub
-sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
-apt-get update
-apt-get -qq -y install --no-install-recommends google-chrome-stable
+# # now that we have curl, add the signing key and chrome repo to apt-get
+# curl -sL https://dl-ssl.google.com/linux/linux_signing_key.pub -o key.pub
+# apt-key add key.pub
+# sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+# apt-get update
+# apt-get -qq -y install --no-install-recommends google-chrome-stable
 
 # Install our user and create directory to install actions-runner and the hostedtoolcache
 addgroup --gid 1000 "${RUNGROUP}" && adduser --uid 1000 --ingroup "${RUNGROUP}" --shell /bin/bash "${RUNUSER}"
 mkdir -p "/home/${RUNUSER}/actions-runner"
 mkdir -p "/opt/hostedtoolcache"
+
+# Install sonarscanner https://docs.sonarqube.org/latest/analysis/scan/sonarscanner/
+curl -sL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip -o sonar-scanner.zip
+unzip ./sonar-scanner.zip -d /opt/hostedtoolcache/sonar-scanner
 
 # These steps are straight from the github runner installation guide when attempting to add a runner to a repository
 cd "/home/${RUNUSER}/actions-runner"
@@ -33,18 +37,19 @@ tar xzf "./actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz"
 ./bin/installdependencies.sh
 
 # Install awscliv2
-curl -sL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
-unzip awscliv2.zip
-./aws/install
+# curl -sL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
+# unzip awscliv2.zip
+# ./aws/install
 
 # Cleanup archive debris and unnecessary items to reduce image size
 rm -rf \
-      awscliv2.zip \
-      aws \
-      /usr/local/aws-cli/v2/*/dist/aws_completer \
-      /usr/local/aws-cli/v2/*/dist/awscli/data/ac.index \
-      /usr/local/aws-cli/v2/*/dist/awscli/examples \
-      "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz"
+    "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" \
+    sonar-scanner.zip
+    #   awscliv2.zip \
+    #   aws \
+    #   /usr/local/aws-cli/v2/*/dist/aws_completer \
+    #   /usr/local/aws-cli/v2/*/dist/awscli/data/ac.index \
+    #   /usr/local/aws-cli/v2/*/dist/awscli/examples \
 
 # give privileges to our user
 chown -R "${RUNUSER}":"${RUNGROUP}" "/opt/hostedtoolcache"

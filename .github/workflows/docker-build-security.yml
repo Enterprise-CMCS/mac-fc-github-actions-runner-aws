@@ -1,9 +1,9 @@
-name: Build and push
+name: Build and push security runner image
 
 on:
   push:
-    branches-ignore:
-      - "*-skip-build"
+    branches-ignore: # TODO update and make this a reusable workflow
+      - bharvey-security-skip-build
 
 jobs:
   set-runner-uuid:
@@ -52,29 +52,30 @@ jobs:
         with:
           context: .
           load: true # export a tarball so we can test the image locally before pushing
-          tags: ${{ env.SHA_TAG }}
+          tags: ${{ env.SHA_TAG }}, security
+          file: security.Dockerfile
           cache-from: type=gha # use the GitHub Cache API
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.SHA_TAG }}
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+      # - name: Run Trivy vulnerability scanner
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     image-ref: ${{ env.SHA_TAG }}
+      #     format: "table"
+      #     exit-code: "1"
+      #     ignore-unfixed: true
+      #     vuln-type: "os,library"
+      #     severity: "CRITICAL,HIGH"
 
-      - name: Run Dockle image linter
-        uses: hands-lab/dockle-action@v1
-        env:
-          DOCKLE_ACCEPT_FILE_EXTENSIONS: pem
-        with:
-          image: ${{ env.SHA_TAG }}
-          exit-code: "1"
+      # - name: Run Dockle image linter
+      #   uses: hands-lab/dockle-action@v1
+      #   env:
+      #     DOCKLE_ACCEPT_FILE_EXTENSIONS: pem
+      #   with:
+      #     image: ${{ env.SHA_TAG }}
+      #     exit-code: "1"
 
-      - name: Push Docker image to ECR with just SHA tag
+      - name: Push Docker image to ECR
         run: |
           docker push ${{ env.SHA_TAG }}
 

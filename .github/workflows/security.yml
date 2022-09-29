@@ -1,0 +1,187 @@
+name: Run security scans
+
+on:
+  push:
+    branches:
+      - bharvey-security-skip-build
+
+jobs:
+  # start-runners:
+  #   name: Provision self-hosted runners
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v1
+  #       with:
+  #         aws-region: us-east-1
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  #     - name: Scale up ECS service
+  #       uses: Enterprise-CMCS/ecs-scale-service@bharvey-refactor
+  #       with:
+  #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+  #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+  #         desired-count: 1
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and export
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: security.Dockerfile
+          load: true
+          tags: security:latest
+          cache-from: type=gha # use the GitHub Cache API
+          cache-to: type=gha,mode=max
+          # outputs: type=docker,dest=/tmp/myimage.tar  # TODO use this if we need to share the image between jobs
+
+      # Trivy -------------
+
+      - name: Get Trivy template
+        run: curl --fail --show-error --output asff.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/asff.tpl
+
+      - name: Make Trivy directories
+        run: mkdir -p scans/trivy/hdf scans/trivy/asff
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: security:latest
+          format: template
+          template: "@asff.tpl"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          output: scans/trivy/asff/trivy-asff.json
+
+      - name: Upload Trivy ASFF
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy
+          path: scans/trivy/asff/trivy-asff.json
+          if-no-files-found: ignore
+
+      # Dockle -------------
+
+      - name: Make Dockle directories
+        run: mkdir -p scans/dockle/hdf # don't create scans/dockle/asff here or convert:hdf2asff will get mad when it tries to create the directory
+
+      - name: Run Dockle
+        uses: docker://goodwithtech/dockle:latest
+        with:
+          args: -f sarif -o scans/dockle/dockle.json security:latest
+
+      - name: Convert Dockle sarif to HDF
+        uses: mitre/saf_action@v1
+        with:
+          command_string: "convert sarif2hdf -i scans/dockle/dockle.json -o scans/dockle/hdf/dockle-hdf" # the converter adds the .json suffix to the output
+
+      - name: Convert Dockle HDF to ASFF
+        uses: mitre/saf_action@v1
+        with:
+          # 'saf convert:hdf2asff' creates a new folder for the output with 1 or more zero-indexed files named `asff.p{index}.json, e.g. 'asff.p0.json'
+          command_string: "convert hdf2asff -i scans/dockle/hdf/dockle-hdf.json -a 037370603820 -r us-east-1 -t dockle -o scans/dockle/asff"
+
+      - name: Upload Dockle ASFF
+        uses: actions/upload-artifact@v3
+        with:
+          name: dockle
+          path: scans/dockle/**/*asff*.json
+          if-no-files-found: ignore
+
+      - name: Set tool names as matrix output
+        id: set-matrix
+        run:
+          | # find the name of all non-empty tool directories to use as our matrix values
+          TOOL_NAMES=$( \
+          find scans -type f | awk -F '/' '{print $2}' \
+          | jq -csR 'split("\n")[:-1] | unique'
+          )
+          echo $TOOL_NAMES
+          ls -R scans
+          echo "::set-output name=matrix::$TOOL_NAMES"
+
+  add-product-name:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        tool: ${{ fromJson(needs.build.outputs.matrix )}}
+    steps:
+      - name: Download ASFF artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.tool }}
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
+  # self-hosted-security:
+  #   # needs: start-runners
+  #   runs-on: self-hosted
+  #   timeout-minutes: 5
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+
+  #     - name: Set up Node
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 16
+
+  #     - name: Get branch name
+  #       shell: bash
+  #       run: echo "::set-output name=branch-name::${GITHUB_REF#refs/heads/}"
+  #       id: get-branch-name
+
+  #     - name: Cache SonarQube
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: /home/runner/.sonar/cache
+  #         key: ${{ runner.os }}-sonarqube
+
+  #     - name: SonarQube scan
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  #       run: sonar-scanner -Dsonar.projectKey=mac-fc-github-actions-runner-aws
+
+  #     - name: Run SAF CLI on SonarQube
+  #       uses: mitre/saf_action@v1
+  #       with:
+  #         command_string: "convert sonarqube2hdf -a ${{ secrets.SONAR_TOKEN }} -u ${{ secrets.SONAR_HOST_URL }} -n mac-fc-github-actions-runner-aws -o sonarqube_hdf.json -b ${{ steps.get-branch-name.outputs.branch-name }}"
+
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: sonarqube-hdf-json
+  #         path: ./sonarqube_hdf.json
+
+  # stop-runners:
+  #   name: Deprovision self-hosted runners
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   needs: [start-runners, self-hosted-security]
+  #   steps:
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v1
+  #       with:
+  #         aws-region: us-east-1
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  #     - name: Scale down ECS service
+  #       uses: Enterprise-CMCS/ecs-scale-service@bharvey-refactor
+  #       with:
+  #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+  #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+  #         desired-count: 0

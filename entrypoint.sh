@@ -2,7 +2,6 @@
 set -ex
 
 mkdir work-dir
-cd actions-runner
 
 # Grab a runner registration token
 # https://docs.github.com/en/rest/actions/self-hosted-runners#create-a-registration-token-for-a-repository
@@ -38,7 +37,7 @@ UNIQUE_ID=${RUNNER_UUID:-$(uuidgen)}
       --token "${REGISTRATION_TOKEN}" \
       --name "${UNIQUE_ID}" \
       --labels "${UNIQUE_ID}" \
-      --work ../work-dir \
+      --work work-dir \
       --replace \
       --disableupdate \
       --ephemeral
