@@ -252,4 +252,3 @@ resource "aws_ecs_service" "actions-runner" {
     ignore_changes = [desired_count]
   }
 }
-

@@ -5,28 +5,13 @@ on:
     branches:
       - bharvey-security-skip-build
 
-jobs:
-  # start-runners:
-  #   name: Provision self-hosted runners
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1
-  #       with:
-  #         aws-region: us-east-1
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+permissions:
+  id-token: write
 
-  #     - name: Scale up ECS service
-  #       uses: Enterprise-CMCS/ecs-scale-service@bharvey-refactor
-  #       with:
-  #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
-  #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
-  #         desired-count: 1
-  build:
+jobs:
+  # This job is for scan tools that require a built Docker image
+  build-and-test-image:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -38,20 +23,20 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: security.Dockerfile
           load: true
           tags: security:latest
           cache-from: type=gha # use the GitHub Cache API
           cache-to: type=gha,mode=max
-          # outputs: type=docker,dest=/tmp/myimage.tar  # TODO use this if we need to share the image between jobs
+          # outputs: type=docker,dest=/tmp/myimage.tar  # use this if we need to share the image between jobs
 
       # Trivy -------------
 
       - name: Get Trivy template
         run: curl --fail --show-error --output asff.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/asff.tpl
 
-      - name: Make Trivy directories
-        run: mkdir -p scans/trivy/hdf scans/trivy/asff
+      # tool output directories should follow the format 'scans/{tool name}' to avoid naming collisions
+      - name: Make Trivy directory
+        run: mkdir -p scans/trivy
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -61,19 +46,27 @@ jobs:
           template: "@asff.tpl"
           ignore-unfixed: true
           vuln-type: "os,library"
-          output: scans/trivy/asff/trivy-asff.json
+          output: scans/trivy/trivy-asff.json
+        env:
+          # these are required by the Trivy template
+          AWS_REGION: us-east-1
+          AWS_ACCOUNT_ID: "037370603820"
+
+      - name: Reformat Trivy ASFF # see https://github.com/aquasecurity/trivy/blob/8ad9b8a939a0001a07ef46faa2686d3f115f0754/docs/tutorials/integrations/aws-security-hub.md
+        run: jq '.Findings' scans/trivy/trivy-asff.json > /tmp/tmp.json && mv  /tmp/tmp.json scans/trivy/trivy-asff.json
 
       - name: Upload Trivy ASFF
-        uses: actions/upload-artifact@v3
+        uses: ./.github/actions/upload-asff
         with:
-          name: trivy
-          path: scans/trivy/asff/trivy-asff.json
-          if-no-files-found: ignore
+          asff-directory-path: scans/trivy
+          company-name: Aquasecurity
+          product-name: Trivy
+          oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
       # Dockle -------------
 
-      - name: Make Dockle directories
-        run: mkdir -p scans/dockle/hdf # don't create scans/dockle/asff here or convert:hdf2asff will get mad when it tries to create the directory
+      - name: Make Dockle directory
+        run: mkdir -p scans/dockle
 
       - name: Run Dockle
         uses: docker://goodwithtech/dockle:latest
@@ -83,67 +76,109 @@ jobs:
       - name: Convert Dockle sarif to HDF
         uses: mitre/saf_action@v1
         with:
-          command_string: "convert sarif2hdf -i scans/dockle/dockle.json -o scans/dockle/hdf/dockle-hdf" # the converter adds the .json suffix to the output
+          command_string: "convert sarif2hdf -i scans/dockle/dockle.json -o scans/dockle/dockle-hdf" # the converter adds the .json suffix to the output
 
       - name: Convert Dockle HDF to ASFF
         uses: mitre/saf_action@v1
         with:
           # 'saf convert:hdf2asff' creates a new folder for the output with 1 or more zero-indexed files named `asff.p{index}.json, e.g. 'asff.p0.json'
-          command_string: "convert hdf2asff -i scans/dockle/hdf/dockle-hdf.json -a 037370603820 -r us-east-1 -t dockle -o scans/dockle/asff"
+          command_string: "convert hdf2asff -i scans/dockle/dockle-hdf.json -a 037370603820 -r us-east-1 -t dockle -o scans/dockle/asff"
 
       - name: Upload Dockle ASFF
-        uses: actions/upload-artifact@v3
+        uses: ./.github/actions/upload-asff
         with:
-          name: dockle
-          path: scans/dockle/**/*asff*.json
-          if-no-files-found: ignore
+          asff-directory-path: scans/dockle/asff
+          company-name: Goodwith
+          product-name: Dockle
+          oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-      - name: Set tool names as matrix output
-        id: set-matrix
-        run:
-          | # find the name of all non-empty tool directories to use as our matrix values
-          TOOL_NAMES=$( \
-          find scans -type f | awk -F '/' '{print $2}' \
-          | jq -csR 'split("\n")[:-1] | unique'
-          )
-          echo $TOOL_NAMES
-          ls -R scans
-          echo "::set-output name=matrix::$TOOL_NAMES"
-
-  add-product-name:
+  run-inspec:
     runs-on: ubuntu-latest
-    needs: build
-    strategy:
-      matrix:
-        tool: ${{ fromJson(needs.build.outputs.matrix )}}
     steps:
-      - name: Download ASFF artifact
-        uses: actions/download-artifact@v3
+      - name: Checkout # required for use of the local composite action below
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          name: ${{ matrix.tool }}
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-      - name: Display structure of downloaded files
-        run: ls -R
+      - name: Install Inspec
+        run: curl  --fail --show-error https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
 
-  # self-hosted-security:
-  #   # needs: start-runners
+      - name: Run Inspec profile
+        run: inspec exec https://github.com/Staggerlee011/s3-bp-benchmark/archive/master.tar.gz -t aws:// --input s3_name=aws-cms-oit-iusg-spe-cmcs-macbis-dev-tf-state-us-east-1 --reporter=cli json:scans/inspec/hdf/inspec_hdf.json --chef-license accept
+
+      - name: Convert Inspec HDF to ASFF
+        uses: mitre/saf_action@v1
+        with:
+          command_string: "convert hdf2asff -i scans/inspec/hdf/inspec_hdf.json -a 037370603820 -r us-east-1 -t inspec -o scans/inspec/asff"
+
+      - name: Upload Inspec ASFF
+        uses: ./.github/actions/upload-asff
+        with:
+          asff-directory-path: scans/inspec/asff
+          company-name: Chef
+          product-name: Inspec
+
+  # Commenting out SonarQube until https://github.com/mitre/heimdall2/pull/3650 is merged
+
+  # Tools that require self-hosted runners should be run after this job
+  # start-runners:
+  #   name: Provision self-hosted runners
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v1
+  #       with:
+  #         aws-region: us-east-1
+  #         role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+
+  #     - name: Scale up ECS service
+  #       uses: Enterprise-CMCS/ecs-scale-service@main
+  #       with:
+  #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+  #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+  #         desired-count: 1
+
+  # run-sonarqube:
+  #   needs: start-runners
   #   runs-on: self-hosted
-  #   timeout-minutes: 5
   #   steps:
   #     - name: Checkout
   #       uses: actions/checkout@v3
-
-  #     - name: Set up Node
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 16
 
   #     - name: Get branch name
   #       shell: bash
   #       run: echo "::set-output name=branch-name::${GITHUB_REF#refs/heads/}"
   #       id: get-branch-name
 
+  #     - name: Set up Node
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 16
+
+  #     - name: Create SonarQube directory
+  #       run: mkdir sonar_scanner
+
   #     - name: Cache SonarQube
+  #       uses: actions/cache@v3
+  #       id: cache-sonarqube
+  #       with:
+  #         path: sonar_scanner
+  #         key: ${{ runner.os }}-sonar-scanner-cli-4.7.0.2747
+
+  #     - name: Install SonarQube
+  #       if: steps.cache-sonarqube.outputs.cache-hit != true
+  #       run: |
+  #         curl --fail --show-error --silent --location --output sonar_scanner/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip  \
+  #         && unzip sonar_scanner/sonar-scanner.zip
+
+  #     - name: Add SonarQube to PATH
+  #       run: PATH="sonar_scanner/bin:${PATH}"
+
+  #     - name: Cache SonarQube cache
   #       uses: actions/cache@v3
   #       with:
   #         path: /home/runner/.sonar/cache
@@ -158,29 +193,34 @@ jobs:
   #     - name: Run SAF CLI on SonarQube
   #       uses: mitre/saf_action@v1
   #       with:
-  #         command_string: "convert sonarqube2hdf -a ${{ secrets.SONAR_TOKEN }} -u ${{ secrets.SONAR_HOST_URL }} -n mac-fc-github-actions-runner-aws -o sonarqube_hdf.json -b ${{ steps.get-branch-name.outputs.branch-name }}"
+  #         command_string: "convert sonarqube2hdf -a ${{ secrets.SONAR_TOKEN }} -u ${{ secrets.SONAR_HOST_URL }} -n mac-fc-github-actions-runner-aws -o scans/sonarqube/sonarqube_hdf.json -b ${{ steps.get-branch-name.outputs.branch-name }}"
 
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v3
+  #     - name: Convert SonarQube HDF to ASFF
+  #       uses: mitre/saf_action@v1
   #       with:
-  #         name: sonarqube-hdf-json
-  #         path: ./sonarqube_hdf.json
+  #         command_string: "convert hdf2asff -i scans/sonarqube/sonarqube_hdf.json -a 156322662943 -r us-east-1 -t sonarqube -o scans/sonarqube/asff"
+
+  #     - name: Upload SonarQube ASFF
+  #       uses: ./.github/actions/upload-asff
+  #       with:
+  #         asff-directory-path: scans/sonarqube/asff
+  #         company-name: SonarQube
+  #         product-name: SonarQube
 
   # stop-runners:
   #   name: Deprovision self-hosted runners
   #   runs-on: ubuntu-latest
   #   if: always()
-  #   needs: [start-runners, self-hosted-security]
+  #   needs: [start-runners, run-sonarqube]
   #   steps:
   #     - name: Configure AWS credentials
   #       uses: aws-actions/configure-aws-credentials@v1
   #       with:
   #         aws-region: us-east-1
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
   #     - name: Scale down ECS service
-  #       uses: Enterprise-CMCS/ecs-scale-service@bharvey-refactor
+  #       uses: Enterprise-CMCS/ecs-scale-service@main
   #       with:
   #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
   #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233

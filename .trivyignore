@@ -1,9 +1,13 @@
 # accept the risk of the internal Node.JS libraries used by the runner.
+
 CVE-2021-3807
 CVE-2021-3918
 CVE-2021-44906
 CVE-2022-29244
+CVE-2022-3517
+
 # accept the risk of internal dotnet-core dependencies for the runner
+
 CVE-2018-8292
 CVE-2019-0981
 CVE-2019-0980

@@ -4,27 +4,25 @@ NEVER USE A SELF-HOSTED GITHUB RUNNER ON A PUBLIC REPOSITORY - Any individual ma
 
 ## About
 
-As a part of your GitHub actions workflows, you may need access to internal CMS tooling that is inaccessible from GitHub's hosted runners. Using a self-hosted runner with access to the CMS network would solve this problem.
+As a part of your GitHub actions workflows, you may need access to internal CMS tooling that is inaccessible from GitHub's hosted runners. Using a self-hosted runner with access to the CMS network solves this problem.
 
-## Using the Runner
+## Prerequisites
 
 This procedure assumes that you have already taken the steps documented in the main README. You have:
 
-- Requested an IAM user and verified its access requirements
 - Instantiated the requisite infrastructure in AWS ECR and ECS
+- Instantiated the resources for the GitHub OIDC provider and stored the OIDC role ARN in a GitHub secret called `OIDC_IAM_ROLE_ARN`
 
-### Provisioning the Runners
+## Usage
 
-We will use GitHub actions to provision the requisite number of runners we need we need.
-
-In the root of your repository, create a directory to house your workflow and a yml file for the workflow:
+In the root of your repository, create a directory to house your workflow and a `.yml` file for the workflow:
 
 ```sh
 mkdir -p .github/workflow
 touch .github/workflow/your-workflow.yml
 ```
 
-Your workflow must contain the start-runner and remove-runners jobs listed below.
+Your workflow must contain the `start-runners` and `stop-runners` jobs listed below.
 
 ```yaml
 name: your-workflow-name
@@ -35,24 +33,28 @@ on:
 
 name: internal runners test
 
+permissions:
+  id-token: write # this permission is required to authorize the request for the GitHub OIDC token used by the configure-aws-credentials action
+
 jobs:
-  start-runner:
+  start-runners:
     name: Provision self-hosted runners
     runs-on: ubuntu-latest
     steps:
-      - name: TrussWorks Provisioning Action
-        uses: trussworks/ecs-scaleup@v3.0.0
-        id: truss
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-          ecr-repository: github-runner
-          image-tag: latest
-          repository-hash:
-          desired-count: 3
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-  test_self_hosted:
+      - name: Scale up ECS service
+        uses: Enterprise-CMCS/ecs-scale-service@main
+        with:
+          cluster: ${{ your self-hosted runner cluster }}
+          service: ${{ your self-hosted runner service }}
+          desired-count: 2
+
+  test-self-hosted:
     name: Testing self-hosted tag
     needs: start-runner
     runs-on: self-hosted
@@ -60,7 +62,7 @@ jobs:
       - name: step 1
         run: echo "Hello World!"
 
-  test_internal_tools:
+  test-internal-tools:
     name: Testing internal tool connectivity
     needs: start-runner
     runs-on: self-hosted
@@ -70,59 +72,56 @@ jobs:
       - name: curl artifactory
         run: curl --connect-timeout 5 https://artifactory.cloud.cms.gov/ui/packages
 
-  test_hosted_tools:
-    name: Testing runner directories
-    needs: start-runner
-    runs-on: self-hosted
-    steps:
-      - name: ls /opt/hostedtoolcache
-        run: ls -al /opt/hostedtoolcache
-      - name: ls /home/runner
-        run: ls -al /home/runner
-
-  remove-runners:
+  stop-runners:
     name: Deprovision self-hosted runners
-    needs: [start-runner, test_self_hosted, test_internal_tools, test_hosted_tools]
     runs-on: ubuntu-latest
+    if: always()
+    needs: [start-runners, test-self-hosted, test-internal-tools]
     steps:
-      - name: TrussWorks Deprovisioning Action
-        uses: trussworks/ecs-scaledown@v2.0.0
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-          repository-hash:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+
+      - name: Scale down ECS service
+        uses: Enterprise-CMCS/ecs-scale-service@main
+        with:
+          cluster: ${{ your self-hosted runner cluster }}
+          service: ${{ your self-hosted runner service }}
+          desired-count: 0
 ```
 
-The items to configure are:
+Any existing workflows that you have that you wish to run on a self-hosted runner can be run by simply changing the `runs-on` argument from a GitHub hosted tag (e.g. `ubuntu-latest`) to `self-hosted`.
 
-- **Your AWS Access Key and Secret Access Keys**. These should be populated in your repository secrets.
+In order to ensure that the runners are removed following the completion of the tasks and not any sooner, you must populate the list of steps that the `remove-runners` job depends on with the full list of your jobs. For example, if you have a workflow that looks like:
 
-- All variables in the **top-level env** configuration of the workflow:
+```yaml
+jobs:
+  start-runners: ...
+  job1: ...
+  job2: ...
+  job3: ...
+  stop-runners: ...
+```
 
-  - AWS_REGION - your AWS region, e.g. us-east-1
-  - ECR_REPOSITORY - the name of the ECR repository in which you are housing your self-hosted runner images
-  - IMAGE_TAG - the unique tag of a specific image to pull from your ECR repository. For example, "latest", which is updated each time a new image is pushed to ECR.
-  - DESIRED_COUNT: The number of runners you will need. For example, if you have 3 jobs following the start-runner task, you should populate this with the value 3.
-  - REPOSITORY_HASH: this is the unique UUID generated based off of the environment, Github owner, and Github repo name - you can plug this in to automatically handle the naming scheme for multiple resources. An example is `aa50c18a-3141-506e-a0da-b96b2e12048e`. This hash is generated when the Terraform is deployed. You can also fetch this hash from the ECS console in your AWS environment. The cluster will be named in the format `gh-runner-{HASH}`.
+then your `needs` variable under `stop-runners` should be populated with `[start-runners, job1, job2, job3]`. Using `if: always()` on the `stop-runners` job ensures that the runners will be deprovisioned even if some of the workflows on the runners fail.
 
-- **Your jobs**. Any existing workflows that you have that you wish to run on a self-hosted runner can be run by simply changing the `runs-on` argument from a GitHub hosted tag (e.g. `ubuntu-latest`) to `self-hosted`.
-- **The `needs` variable** under the `remove-runners` job. In order to ensure that the runners are removed following the completion of the tasks and not any sooner, you must populate the list of steps that the `remove-runners` job depends on with the full list of your jobs.
+## Tools
 
-  - For example, if you have a workflow that looks like:
+The self-hosted runner image is intentionally lightweight and contains the following tools:
 
-    ```yaml
-    jobs:
-      start-runner:
-        ...
-      job1:
-        ...
-      job2:
-        ...
-      job3:
-        ...
-      remove-runners:
-        ...
-    ```
+- the Actions runner
+- curl
+- jq
+- uuid-runtime
+- unzip
 
-    then your `needs` variable under `remove-runner` should be populated with `[start-runner, job1, job2, job3]`.
+You should be sure to install any other prerequisites onto the self-hosted runner before the steps that require them. For example, you could use the [setup-node](https://github.com/actions/setup-node) action before any steps that require Node.
+
+```yaml
+- name: Set up Node
+  uses: actions/setup-node@v3
+  with:
+    node-version: 16
+```
