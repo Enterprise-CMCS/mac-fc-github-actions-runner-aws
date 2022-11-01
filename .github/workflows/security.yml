@@ -1,9 +1,7 @@
 name: Run security scans
 
 on:
-  push:
-    branches:
-      - bharvey-security-skip-build
+  workflow_dispatch: # this effectively disables the workflow for now since it's an example only
 
 permissions:
   id-token: write
