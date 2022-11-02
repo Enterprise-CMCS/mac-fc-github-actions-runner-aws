@@ -24,6 +24,7 @@ This module uses an existing ECR repository in AWS, and so does not provision on
 3. Provision the Terraform module in this repository.
 4. You should now be able to push images to the org level ECR repository via a push to your main branch or a new release. An ECS Cluster and Service should be set up for you.
 5. See the [documentation](Usage.md) on usage of the runner on how to deploy runners to your service.
+6. For Slack notifications (optional), follow [these instructions to set up an incoming webhook](https://api.slack.com/messaging/webhooks) and store the webhook URL in GitHub secrets as `SLACK_WEBHOOK_URL`
 
 ### IAM Permissions
 

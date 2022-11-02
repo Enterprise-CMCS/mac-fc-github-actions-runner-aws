@@ -235,8 +235,8 @@ jobs:
         run: echo '::set-output name=secret::${{ secrets.SLACK_WEBHOOK_URL }}'
 
       - name: Get workflow conclusion # conclusion is stored in env.WORKFLOW_CONCLUSION
-        uses: technote-space/workflow-conclusion-action@v3
         if: steps.check-webhook-secret.outputs.secret
+        uses: technote-space/workflow-conclusion-action@v3
 
       - name: Send Slack notification
         if: steps.check-webhook-secret.outputs.secret
