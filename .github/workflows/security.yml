@@ -14,111 +14,111 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v2
 
-      - name: Build and export
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          load: true
-          tags: security:latest
-          cache-from: type=gha # use the GitHub Cache API
-          cache-to: type=gha,mode=max
-          # outputs: type=docker,dest=/tmp/myimage.tar  # use this if we need to share the image between jobs
+  #     - name: Build and export
+  #       uses: docker/build-push-action@v3
+  #       with:
+  #         context: .
+  #         load: true
+  #         tags: security:latest
+  #         cache-from: type=gha # use the GitHub Cache API
+  #         cache-to: type=gha,mode=max
+  #         # outputs: type=docker,dest=/tmp/myimage.tar  # use this if we need to share the image between jobs
 
-      # Trivy -------------
+  #     # Trivy -------------
 
-      - name: Get Trivy template
-        run: curl --fail --show-error --output asff.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/asff.tpl
+  #     - name: Get Trivy template
+  #       run: curl --fail --show-error --output asff.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/asff.tpl
 
-      # tool output directories should follow the format 'scans/{tool name}' to avoid naming collisions
-      - name: Make Trivy directory
-        run: mkdir -p scans/trivy
+  #     # tool output directories should follow the format 'scans/{tool name}' to avoid naming collisions
+  #     - name: Make Trivy directory
+  #       run: mkdir -p scans/trivy
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: security:latest
-          format: template
-          template: "@asff.tpl"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          output: scans/trivy/trivy-asff.json
-        env:
-          # these are required by the Trivy template
-          AWS_REGION: us-east-1
-          AWS_ACCOUNT_ID: "037370603820"
+  #     - name: Run Trivy vulnerability scanner
+  #       uses: aquasecurity/trivy-action@master
+  #       with:
+  #         image-ref: security:latest
+  #         format: template
+  #         template: "@asff.tpl"
+  #         ignore-unfixed: true
+  #         vuln-type: "os,library"
+  #         output: scans/trivy/trivy-asff.json
+  #       env:
+  #         # these are required by the Trivy template
+  #         AWS_REGION: us-east-1
+  #         AWS_ACCOUNT_ID: "037370603820"
 
-      - name: Reformat Trivy ASFF # see https://github.com/aquasecurity/trivy/blob/8ad9b8a939a0001a07ef46faa2686d3f115f0754/docs/tutorials/integrations/aws-security-hub.md
-        run: jq '.Findings' scans/trivy/trivy-asff.json > /tmp/tmp.json && mv  /tmp/tmp.json scans/trivy/trivy-asff.json
+  #     - name: Reformat Trivy ASFF # see https://github.com/aquasecurity/trivy/blob/8ad9b8a939a0001a07ef46faa2686d3f115f0754/docs/tutorials/integrations/aws-security-hub.md
+  #       run: jq '.Findings' scans/trivy/trivy-asff.json > /tmp/tmp.json && mv  /tmp/tmp.json scans/trivy/trivy-asff.json
 
-      - name: Upload Trivy ASFF
-        uses: ./.github/actions/upload-asff
-        with:
-          asff-directory-path: scans/trivy
-          company-name: Aquasecurity
-          product-name: Trivy
-          oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+  #     - name: Upload Trivy ASFF
+  #       uses: ./.github/actions/upload-asff
+  #       with:
+  #         asff-directory-path: scans/trivy
+  #         company-name: Aquasecurity
+  #         product-name: Trivy
+  #         oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-      # Dockle -------------
+  #     # Dockle -------------
 
-      - name: Make Dockle directory
-        run: mkdir -p scans/dockle
+  #     - name: Make Dockle directory
+  #       run: mkdir -p scans/dockle
 
-      - name: Run Dockle
-        uses: docker://goodwithtech/dockle:latest
-        with:
-          args: -f sarif -o scans/dockle/dockle.json security:latest
+  #     - name: Run Dockle
+  #       uses: docker://goodwithtech/dockle:latest
+  #       with:
+  #         args: -f sarif -o scans/dockle/dockle.json security:latest
 
-      - name: Convert Dockle sarif to HDF
-        uses: mitre/saf_action@v1
-        with:
-          command_string: "convert sarif2hdf -i scans/dockle/dockle.json -o scans/dockle/dockle-hdf" # the converter adds the .json suffix to the output
+  #     - name: Convert Dockle sarif to HDF
+  #       uses: mitre/saf_action@v1
+  #       with:
+  #         command_string: "convert sarif2hdf -i scans/dockle/dockle.json -o scans/dockle/dockle-hdf" # the converter adds the .json suffix to the output
 
-      - name: Convert Dockle HDF to ASFF
-        uses: mitre/saf_action@v1
-        with:
-          # 'saf convert:hdf2asff' creates a new folder for the output with 1 or more zero-indexed files named `asff.p{index}.json, e.g. 'asff.p0.json'
-          command_string: "convert hdf2asff -i scans/dockle/dockle-hdf.json -a 037370603820 -r us-east-1 -t dockle -o scans/dockle/asff"
+  #     - name: Convert Dockle HDF to ASFF
+  #       uses: mitre/saf_action@v1
+  #       with:
+  #         # 'saf convert:hdf2asff' creates a new folder for the output with 1 or more zero-indexed files named `asff.p{index}.json, e.g. 'asff.p0.json'
+  #         command_string: "convert hdf2asff -i scans/dockle/dockle-hdf.json -a 037370603820 -r us-east-1 -t dockle -o scans/dockle/asff"
 
-      - name: Upload Dockle ASFF
-        uses: ./.github/actions/upload-asff
-        with:
-          asff-directory-path: scans/dockle/asff
-          company-name: Goodwith
-          product-name: Dockle
-          oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+  #     - name: Upload Dockle ASFF
+  #       uses: ./.github/actions/upload-asff
+  #       with:
+  #         asff-directory-path: scans/dockle/asff
+  #         company-name: Goodwith
+  #         product-name: Dockle
+  #         oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-  run-inspec:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout # required for use of the local composite action below
-        uses: actions/checkout@v3
+  # run-inspec:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout # required for use of the local composite action below
+  #       uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v1
+  #       with:
+  #         aws-region: us-east-1
+  #         role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-      - name: Install Inspec
-        run: curl  --fail --show-error https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
+  #     - name: Install Inspec
+  #       run: curl  --fail --show-error https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
 
-      - name: Run Inspec profile
-        run: inspec exec https://github.com/Staggerlee011/s3-bp-benchmark/archive/master.tar.gz -t aws:// --input s3_name=aws-cms-oit-iusg-spe-cmcs-macbis-dev-tf-state-us-east-1 --reporter=cli json:scans/inspec/hdf/inspec_hdf.json --chef-license accept
+  #     - name: Run Inspec profile
+  #       run: inspec exec https://github.com/Staggerlee011/s3-bp-benchmark/archive/master.tar.gz -t aws:// --input s3_name=aws-cms-oit-iusg-spe-cmcs-macbis-dev-tf-state-us-east-1 --reporter=cli json:scans/inspec/hdf/inspec_hdf.json --chef-license accept
 
-      - name: Convert Inspec HDF to ASFF
-        uses: mitre/saf_action@v1
-        with:
-          command_string: "convert hdf2asff -i scans/inspec/hdf/inspec_hdf.json -a 037370603820 -r us-east-1 -t inspec -o scans/inspec/asff"
+  #     - name: Convert Inspec HDF to ASFF
+  #       uses: mitre/saf_action@v1
+  #       with:
+  #         command_string: "convert hdf2asff -i scans/inspec/hdf/inspec_hdf.json -a 037370603820 -r us-east-1 -t inspec -o scans/inspec/asff"
 
-      - name: Upload Inspec ASFF
-        uses: ./.github/actions/upload-asff
-        with:
-          asff-directory-path: scans/inspec/asff
-          company-name: Chef
-          product-name: Inspec
+  #     - name: Upload Inspec ASFF
+  #       uses: ./.github/actions/upload-asff
+  #       with:
+  #         asff-directory-path: scans/inspec/asff
+  #         company-name: Chef
+  #         product-name: Inspec
 
   # Commenting out SonarQube until https://github.com/mitre/heimdall2/pull/3650 is merged
 
@@ -223,3 +223,52 @@ jobs:
   #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
   #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
   #         desired-count: 0
+
+  slack-notification:
+    name: Slack notification
+    needs: [build-and-test-image, run-inspec] # set "needs" to all previous jobs to make sure this job runs last
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check for Slack webhook secret
+        id: check-webhook-secret
+        run: echo '::set-output name=secret::${{ secrets.SLACK_WEBHOOK_URL }}'
+
+      - name: Get workflow conclusion # conclusion is stored in env.WORKFLOW_CONCLUSION
+        uses: technote-space/workflow-conclusion-action@v3
+        if: steps.check-webhook-secret.outputs.secret
+
+      - name: Send Slack notification
+        if: steps.check-webhook-secret.outputs.secret
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Security scan workflow #${{github.run_number}} ",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ (env.WORKFLOW_CONCLUSION == 'success' && ':white_check_mark:') || ':x:' }} Result: ${{ env.WORKFLOW_CONCLUSION }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View this workflow run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
