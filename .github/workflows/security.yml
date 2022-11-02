@@ -245,10 +245,17 @@ jobs:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "${{ (env.WORKFLOW_CONCLUSION == 'success' && ':white_check_mark:') || ':x:' }} Security scan workflow #${{github.run_number}} result: ${{ env.WORKFLOW_CONCLUSION }}",
+                    "text": "Security scan workflow #${{github.run_number}} ",
                     "emoji": true
                   }
                 },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ (env.WORKFLOW_CONCLUSION == 'success' && ':white_check_mark:') || ':x:' }} Result: ${{ env.WORKFLOW_CONCLUSION }}"
+                  }
+                }
                 {
                   "type": "section",
                   "text": {
