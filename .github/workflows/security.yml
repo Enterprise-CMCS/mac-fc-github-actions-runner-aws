@@ -242,10 +242,10 @@ jobs:
             {
               "blocks": [
                 {
-                  "type": "section",
+                  "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "Security scan workflow result: ${{ env.WORKFLOW_CONCLUSION }}",
+                    "text": "Security scan workflow result: ${{ env.WORKFLOW_CONCLUSION }} ${{ (env.WORKFLOW_CONCLUSION == 'success' && :white_check_mark:) || :x: }},
                     "emoji": true
                   }
                 },
@@ -254,11 +254,6 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View this workflow run>"
-                  },
-                  "accessory": {
-                    "type": "image",
-                    "image_url": "https://avatars.githubusercontent.com/u/44036562?s=280&v=4",
-                    "alt_text": "Actions logo"
                   }
                 }
               ]
