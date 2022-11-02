@@ -255,7 +255,7 @@ jobs:
                     "type": "mrkdwn",
                     "text": "${{ (env.WORKFLOW_CONCLUSION == 'success' && ':white_check_mark:') || ':x:' }} Result: ${{ env.WORKFLOW_CONCLUSION }}"
                   }
-                }
+                },
                 {
                   "type": "section",
                   "text": {
