@@ -229,7 +229,7 @@ jobs:
 
   slack-notification:
     name: Slack notificiation
-    needs: publish # set "needs" to the job directly before this one
+    needs: build-and-test-image # set "needs" to the job directly before this one
     runs-on: ubuntu-latest
     if: always()
     steps:
