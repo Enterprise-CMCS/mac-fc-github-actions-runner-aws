@@ -245,7 +245,7 @@ jobs:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "Security scan workflow result: ${{ env.WORKFLOW_CONCLUSION }} ${{ (env.WORKFLOW_CONCLUSION == 'success' && :white_check_mark:) || :x: }},
+                    "text": "Security scan workflow result: ${{ env.WORKFLOW_CONCLUSION }} ${{ (env.WORKFLOW_CONCLUSION == 'success' && :white_check_mark:) || :x: }}",
                     "emoji": true
                   }
                 },
