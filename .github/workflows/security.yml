@@ -4,7 +4,7 @@ on:
   # workflow_dispatch: # this effectively disables the workflow for now since it's an example only
   push:
     branches:
-      - bharvey-slack-from-security
+      - bharvey-slack-from-security-skip-build
 
 permissions:
   id-token: write
