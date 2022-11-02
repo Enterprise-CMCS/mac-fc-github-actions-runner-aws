@@ -246,7 +246,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Security scan workflow result: ${{ env.WORKFLOW_CONCLUSION }}
+                    "text": "Security scan workflow result: ${{ env.WORKFLOW_CONCLUSION }}"
                   }
                 }
               ]
