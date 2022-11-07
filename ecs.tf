@@ -244,11 +244,11 @@ resource "aws_ecs_service" "actions-runner" {
     Automation  = "Terraform"
   }
 
-  # we ignore changes to the task_definition and desired_count because
+  # we ignore changes to the desired_count because
   # github actions workflows manages changes to the task definition and
   # scales up and down the desired count accordingly
 
   lifecycle {
-    ignore_changes = [task_definition, desired_count]
+    ignore_changes = [desired_count]
   }
 }

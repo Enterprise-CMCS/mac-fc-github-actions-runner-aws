@@ -1,20 +1,42 @@
-FROM ubuntu:22.04
+FROM alpine:3.16.2 as install
 
-ARG DEBIAN_FRONTEND=noninteractive
-ARG RUNUSER=runner
-ARG RUNGROUP=runner
+RUN apk add --update --no-cache \
+    curl \
+    tar \
+    ca-certificates
 
 ARG ACTIONS_VERSION="2.298.2"
 
-COPY build.sh /tmp
+RUN \
+    # install runner
+    curl -sL --create-dirs -o "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" "https://github.com/actions/runner/releases/download/v${ACTIONS_VERSION}/actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" \
+    && mkdir runner \
+    && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
-RUN /tmp/build.sh
+FROM ubuntu:22.04
 
-COPY --chown=${RUNUSER}:${RUNGROUP} entrypoint.sh /home/${RUNUSER}
+RUN addgroup --gid 1000 "runner" && adduser --uid 1000 --ingroup "runner" --shell /bin/bash "runner" \
+    && mkdir -p "/home/runner" \
+    && chown -R "runner":"runner" "/home/runner"
 
-RUN rm -rf /tmp/*
+COPY --from=install /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=install ./runner /home/runner
 
-WORKDIR /home/${RUNUSER}
-USER ${RUNUSER}
+# install runner dependencies
+RUN /home/runner/bin/installdependencies.sh
 
+# install entrypoint.sh dependencies (separately since these change more often)
+RUN apt-get update \
+    && apt-get -qq -y install --no-install-recommends \
+    curl \
+    jq \
+    uuid-runtime \
+    unzip \
+    && rm -rvf /var/lib/apt/lists/*
+
+WORKDIR /home/runner
+USER runner
+
+# keep this layer last so changes to the entrypoint script don't trigger rebuilds
+COPY --chown=runner:runner entrypoint.sh .
 ENTRYPOINT ["./entrypoint.sh"]

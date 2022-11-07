@@ -1,6 +1,12 @@
 name: Build and push
 
-on: push
+on:
+  push:
+    branches-ignore:
+      - "*-skip-build"
+
+permissions:
+  id-token: write
 
 jobs:
   set-runner-uuid:
@@ -24,11 +30,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS credentials
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
         uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
       - name: Log in to ECR
         id: login-ecr
@@ -109,6 +114,7 @@ jobs:
     runs-on:
       - self-hosted
       - ${{ needs.set-runner-uuid.outputs.runner-uuid }}
+    timeout-minutes: 10
     steps:
       - name: step 1
         run: echo "Self-hosted runner test was successful!"
@@ -120,11 +126,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
         uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
       - name: Add 'latest' tag to image
         uses: abronin/ecr-retag-action@v1
