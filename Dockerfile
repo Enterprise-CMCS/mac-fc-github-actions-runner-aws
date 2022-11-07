@@ -32,7 +32,7 @@ RUN apt-get update \
     jq \
     uuid-runtime \
     unzip \
-    && rm -rvf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists
 
 WORKDIR /home/runner
 USER runner
