@@ -27,9 +27,9 @@ variable "add_read_only_access" {
   default     = false
 }
 
-variable "create_iam_oidc_provider" {
-  description = "Create the IAM OIDC provider"
-  type        = bool
-  default     = true
+variable "existing_iam_oidc_provider_arn" {
+  description = "The ARN of the existing IAM OIDC provider for GitHub"
+  type        = string
+  default     = ""
 }
 

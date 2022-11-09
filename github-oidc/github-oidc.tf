@@ -1,7 +1,11 @@
 data "aws_caller_identity" "current" {}
 
+locals {
+  create_provider = var.existing_iam_oidc_provider_arn == "" ? true : false
+}
+
 resource "aws_iam_openid_connect_provider" "github_actions" {
-  count           = var.create_iam_oidc_provider ? 1 : 0
+  count           = var.create_provider ? 1 : 0
   client_id_list  = var.audience_list
   thumbprint_list = var.thumbprint_list
   url             = "https://token.actions.githubusercontent.com"
@@ -27,7 +31,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github_actions[0].arn]
+      identifiers = [var.create_provider? aws_iam_openid_connect_provider.github_actions[0].arn : var.existing_iam_oidc_provider_arn]
     }
   }
 }
