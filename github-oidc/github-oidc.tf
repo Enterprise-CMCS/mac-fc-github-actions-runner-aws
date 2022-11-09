@@ -1,6 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
+  count           = var.create_iam_oidc_provider ? 1 : 0
   client_id_list  = var.audience_list
   thumbprint_list = var.thumbprint_list
   url             = "https://token.actions.githubusercontent.com"

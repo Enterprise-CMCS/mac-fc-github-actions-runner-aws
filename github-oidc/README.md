@@ -29,6 +29,7 @@ This module is located in a sub-directory, since some users may wish to consume 
     # thumbprint_list                             = [] # optional, defaults to ["6938fd4d98bab03faadb97b34396831e3780aea1"]
     # github_actions_permissions_policy_json_path = "" # optional, defaults to "github_actions_permission_policy.json"
     # add_read_only_access                        = bool # optional, defaults to false
+    # create_iam_oidc_provider                    = bool # optional, defaults to true. you may need to set this to false if there is an existing IAM provider for token.actions.githubusercontent.com in your AWS account (from another GitHub OIDC implementation), otherwise there will be an error
   }
 ```
 

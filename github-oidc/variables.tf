@@ -20,8 +20,16 @@ variable "github_actions_permissions_policy_json_path" {
   type        = string
   default     = "github_actions_permission_policy.json"
 }
+
 variable "add_read_only_access" {
   description = "Add the AWS read-only managed policy to the OIDC role"
   type        = bool
   default     = false
 }
+
+variable "create_iam_oidc_provider" {
+  description = "Create the IAM OIDC provider"
+  type        = bool
+  default     = true
+}
+
