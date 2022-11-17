@@ -103,7 +103,7 @@ jobs:
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
       - name: Install Inspec
-        run: curl  --fail --show-error https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
+        run: curl --fail --show-error https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
 
       - name: Run Inspec profile
         run: inspec exec https://github.com/Staggerlee011/s3-bp-benchmark/archive/master.tar.gz -t aws:// --input s3_name=aws-cms-oit-iusg-spe-cmcs-macbis-dev-tf-state-us-east-1 --reporter=cli json:scans/inspec/hdf/inspec_hdf.json --chef-license accept
@@ -119,110 +119,123 @@ jobs:
           asff-directory-path: scans/inspec/asff
           company-name: Chef
           product-name: Inspec
-
-  # Commenting out SonarQube until https://github.com/mitre/heimdall2/pull/3650 is merged
+          oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
   # Tools that require self-hosted runners should be run after this job
-  # start-runners:
-  #   name: Provision self-hosted runners
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1
-  #       with:
-  #         aws-region: us-east-1
-  #         role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+  start-runners:
+    name: Provision self-hosted runners
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-  #     - name: Scale up ECS service
-  #       uses: Enterprise-CMCS/ecs-scale-service@main
-  #       with:
-  #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
-  #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
-  #         desired-count: 1
+      - name: Scale up ECS service
+        uses: Enterprise-CMCS/ecs-scale-service@main
+        with:
+          cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+          service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+          desired-count: 1
 
-  # run-sonarqube:
-  #   needs: start-runners
-  #   runs-on: self-hosted
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
+  run-sonarqube:
+    needs: start-runners
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  #     - name: Get branch name
-  #       shell: bash
-  #       run: echo "::set-output name=branch-name::${GITHUB_REF#refs/heads/}"
-  #       id: get-branch-name
+      - name: Get branch name
+        shell: bash
+        run: echo "::set-output name=branch-name::${GITHUB_REF#refs/heads/}"
+        id: get-branch-name
 
-  #     - name: Set up Node
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 16
+      - name: Cache AWS CLI
+        uses: actions/cache@v3
+        id: cache-aws-cli
+        with:
+          path: aws
+          key: ${{ runner.os }}-awscli-exe-linux-x86_64
 
-  #     - name: Create SonarQube directory
-  #       run: mkdir sonar_scanner
+      - name: Install AWS CLI
+        if: steps.cache-aws-cli.outputs.cache-hit != true
+        run: |
+          curl --fail --show-error --silent "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          ./aws/install -i "$HOME" -b "$HOME/.local/bin"
 
-  #     - name: Cache SonarQube
-  #       uses: actions/cache@v3
-  #       id: cache-sonarqube
-  #       with:
-  #         path: sonar_scanner
-  #         key: ${{ runner.os }}-sonar-scanner-cli-4.7.0.2747
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
 
-  #     - name: Install SonarQube
-  #       if: steps.cache-sonarqube.outputs.cache-hit != true
-  #       run: |
-  #         curl --fail --show-error --silent --location --output sonar_scanner/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip  \
-  #         && unzip sonar_scanner/sonar-scanner.zip
+      - name: Create SonarQube directory
+        run: mkdir sonar_scanner
 
-  #     - name: Add SonarQube to PATH
-  #       run: PATH="sonar_scanner/bin:${PATH}"
+      - name: Cache SonarQube
+        uses: actions/cache@v3
+        id: cache-sonarqube
+        with:
+          path: sonar_scanner
+          key: ${{ runner.os }}-sonar-scanner-cli-4.7.0.2747
 
-  #     - name: Cache SonarQube cache
-  #       uses: actions/cache@v3
-  #       with:
-  #         path: /home/runner/.sonar/cache
-  #         key: ${{ runner.os }}-sonarqube
+      - name: Install SonarQube
+        if: steps.cache-sonarqube.outputs.cache-hit != true
+        run: |
+          curl --fail --show-error --silent --location --output sonar_scanner/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip  \
+          && unzip sonar_scanner/sonar-scanner.zip -d sonar_scanner
 
-  #     - name: SonarQube scan
-  #       env:
-  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  #         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-  #       run: sonar-scanner -Dsonar.projectKey=mac-fc-github-actions-runner-aws
+      - name: Cache SonarQube cache
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/.sonar/cache
+          key: ${{ runner.os }}-sonarqube
 
-  #     - name: Run SAF CLI on SonarQube
-  #       uses: mitre/saf_action@v1
-  #       with:
-  #         command_string: "convert sonarqube2hdf -a ${{ secrets.SONAR_TOKEN }} -u ${{ secrets.SONAR_HOST_URL }} -n mac-fc-github-actions-runner-aws -o scans/sonarqube/sonarqube_hdf.json -b ${{ steps.get-branch-name.outputs.branch-name }}"
+      - name: SonarQube scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: sonar_scanner/sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner -Dsonar.projectKey=mac-fc-github-actions-runner-aws
 
-  #     - name: Convert SonarQube HDF to ASFF
-  #       uses: mitre/saf_action@v1
-  #       with:
-  #         command_string: "convert hdf2asff -i scans/sonarqube/sonarqube_hdf.json -a 156322662943 -r us-east-1 -t sonarqube -o scans/sonarqube/asff"
+      - name: Run SAF CLI on SonarQube
+        uses: mitre/saf_action@v1
+        with:
+          command_string: "convert sonarqube2hdf -a ${{ secrets.SONAR_TOKEN }} -u ${{ secrets.SONAR_HOST_URL }} -n mac-fc-github-actions-runner-aws -o sonar_scanner/sonarqube_hdf.json -b ${{ steps.get-branch-name.outputs.branch-name }}"
 
-  #     - name: Upload SonarQube ASFF
-  #       uses: ./.github/actions/upload-asff
-  #       with:
-  #         asff-directory-path: scans/sonarqube/asff
-  #         company-name: SonarQube
-  #         product-name: SonarQube
+      - name: Convert SonarQube HDF to ASFF
+        uses: mitre/saf_action@v1
+        with:
+          command_string: "convert hdf2asff -i sonar_scanner/sonarqube_hdf.json -a 037370603820 -r us-east-1 -t sonarqube -o sonar_scanner/asff"
 
-  # stop-runners:
-  #   name: Deprovision self-hosted runners
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   needs: [start-runners, run-sonarqube]
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1
-  #       with:
-  #         aws-region: us-east-1
-  #         role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+      - name: Upload SonarQube ASFF
+        uses: ./.github/actions/upload-asff
+        with:
+          asff-directory-path: sonar_scanner/asff
+          company-name: SonarQube
+          product-name: SonarQube
+          oidc-iam-role-arn: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-  #     - name: Scale down ECS service
-  #       uses: Enterprise-CMCS/ecs-scale-service@main
-  #       with:
-  #         cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
-  #         service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
-  #         desired-count: 0
+  stop-runners:
+    name: Deprovision self-hosted runners
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [start-runners, run-sonarqube]
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+
+      - name: Scale down ECS service
+        uses: Enterprise-CMCS/ecs-scale-service@main
+        with:
+          cluster: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+          service: gh-runner-6d81a626-1844-5df5-a3e3-cbbbeab84233
+          desired-count: 0
 
   slack-notification:
     name: Slack notification
