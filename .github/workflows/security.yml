@@ -143,6 +143,8 @@ jobs:
     needs: start-runners
     runs-on: self-hosted
     steps:
+      # Set up prerequisites -------
+
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -158,11 +160,14 @@ jobs:
           path: aws
           key: ${{ runner.os }}-awscli-exe-linux-x86_64
 
-      - name: Install AWS CLI
-        if: steps.cache-aws-cli.outputs.cache-hit != true
+      - name: Download AWS CLI
+        if: steps.cache-aws-cli.outputs.cache-hit != 'true'
         run: |
           curl --fail --show-error --silent "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
+
+      - name: Install AWS CLI # see https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+        run: |
           mkdir -p "$HOME/.local/bin"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           ./aws/install -i "$HOME" -b "$HOME/.local/bin"
@@ -183,16 +188,18 @@ jobs:
           key: ${{ runner.os }}-sonar-scanner-cli-4.7.0.2747
 
       - name: Install SonarQube
-        if: steps.cache-sonarqube.outputs.cache-hit != true
+        if: steps.cache-sonarqube.outputs.cache-hit != 'true'
         run: |
           curl --fail --show-error --silent --location --output sonar_scanner/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip  \
           && unzip sonar_scanner/sonar-scanner.zip -d sonar_scanner
 
-      - name: Cache SonarQube cache
+      - name: Cache SonarQube scanner binaries
         uses: actions/cache@v3
         with:
           path: /home/runner/.sonar/cache
           key: ${{ runner.os }}-sonarqube
+
+      # Run SonarQube -------
 
       - name: SonarQube scan
         env:
