@@ -13,13 +13,13 @@ inputs:
     required: true
     description: The product name of the security tool
   oidc-iam-role-arn:
+    required: true
     description: The ARN of the OIDC IAM role
 
 runs:
   using: composite
   steps:
     - name: Configure AWS credentials
-      if: ${{ inputs.oidc-iam-role-arn != '' }}
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-region: us-east-1
