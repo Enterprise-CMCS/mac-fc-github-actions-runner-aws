@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "SubjectClaimFilters",
+    "ParameterValue": "repo:{organization}/{repo}:{github ref}"
+  },
+  {
+    "ParameterKey": "GitHubActionsAllowedAWSActions",
+    "ParameterValue": "{service1}:{action1}, {service2}:{action2}"
+  },
+  {
+    "ParameterKey": "ManagedPolicyARNs",
+    "ParameterValue": "arn1, arn2"
+  }
+]

@@ -1,63 +1,85 @@
 # github-oidc
 
-This module creates the resources necessary to use GitHub's OIDC provider to retrieve short-term credentials from AWS for performing AWS API calls in an Actions workflow. The advantage of this approach is that there is no need to create an IAM user and store long-term AWS credentials in GitHub secrets.
+This folder contains two methods for using infrastructure-as-code (IaC) to create the resources necessary to use GitHub's OIDC provider to retrieve short-term credentials for performing AWS actions in a GitHub Actions workflow.
 
-[Read more about configuring OpenID Connect in AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
+- [Terraform](./terraform/)
+- [Cloudformation](./cloudformation)
 
-## IAM Permissions
+The advantage of this approach is that there is no need to create an IAM user and store long-term AWS credentials in GitHub secrets.
 
-The resources created by this module include a policy that establishes the trust relationship between GitHub and AWS. However, an additional policy is needed to grant permissions to perform AWS actions in the workflow. For example, if the workflow is scaling self-hosted runners in ECS or importing findings to Security Hub, a policy granting those permissions would need to be attached to the role that the AWS OIDC provider federates to upon getting a token from the GitHub OIDC provider. This module assumes that such a policy will be named `github_actions_permission_policy.json` and located in the same folder as the root module (the path and filename are configurable via the `github_actions_permissions_policy_json_path` variable)
+- [Read more about using GitHub OIDC](https://docs.github.com/en/enterprise-server@3.5/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+- [Read more about configuring OpenID Connect in AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
 
-## Subject Claims
+## Resources
 
-Subject claims allow you to configure the GitHub branch or environment that is permitted to perform AWS actions via the OIDC provider. [Read more about subject claims](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#example-subject-claims)
+Note: In order to successfully create IAM resources in CMS Cloud, developers must supply a path and permissions boundary for the resources. The path and permission boundary vaules defined in [this documentation](https://cloud.cms.gov/creating-identity-access-management-policies) are set automatically via IaC.
 
-## Examples
+### IAM OIDC Identity Provider
 
-### Consuming the module
+IAM OIDC identity providers are entities in IAM that describe an external identity provider (IdP) service that supports the [OpenID Connect (OIDC) standard](http://openid.net/connect/). The AWS IdP is configured with the URL (`token.actions.githubusercontent.com`) and server certificate thumbprint of the GitHub OIDC provider. A valid default value for the thumbprint is provided, but thumbprint can also be obtained by following [these steps](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html).
 
-This module is located in a sub-directory, since some users may wish to consume this module even if they don't need to set up self-hosted runners. Note that to refer to a sub-directory as a module source, you need to [include a double slash before the sub-directory](https://developer.hashicorp.com/terraform/language/modules/sources#modules-in-package-sub-directories).
+## IAM Role
 
-`github-oidc/main.tf`
+This is the role that the Actinos workflow assumes via the OIDC request. The permissions defined for this role dictate the scope of the short-term credentials that are generated and passed back to GitHub by AWS. The ARN of this role is output by each of the IaC methods listed, and is passed in to the [GitHub Action that configures AWS credentials for workflows](https://github.com/aws-actions/configure-aws-credentials#assuming-a-role). See the example below under "Using the OIDC Provider in a Workflow."
 
-```hcl
-  module "github-actions-runner-aws" {
-    source = "github.com/CMSgov/github-actions-runner-aws//github-oidc" # double-slash denotes a sub-directory
+### IAM Trust Policy
 
-    subject_claim_filters                         = ["repo:{your GitHub org}/{your GitHub repo}:*"]
-    # audience_list                               = [] # optional, defaults to ["sts.amazonaws.com"]
-    # thumbprint_list                             = [] # optional, defaults to ["6938fd4d98bab03faadb97b34396831e3780aea1"]
-    # github_actions_permissions_policy_json_path = "" # optional, defaults to "github_actions_permission_policy.json"
-    # add_read_only_access                        = bool # optional, defaults to false
-  }
-```
-
-`github-oidc/github_actions_permission_policy.json`
+This policy establishes the trust relationship between GitHub and AWS based on values in the JSON web token (JWT) submitted by the GitHub OIDC provider. Here's an example of the JWT sent by GitHub to AWS:
 
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": ["securityhub:BatchImportFindings"],
-      "Effect": "Allow",
-      "Resource": "*"
-    },
-    {
-      "Sid": "UpdateService",
-      "Effect": "Allow",
-      "Action": ["ecs:UpdateService"],
-      "Resource": [
-        "arn:aws:ecs:{your region}:{your account number}:service/{your self-hosted runner cluster name}/{your github runner service name}"
-      ]
-    }
-  ]
+  "typ": "JWT",
+  "alg": "RS256",
+  "x5t": "example-thumbprint",
+  "kid": "example-key-id"
+}
+{
+  "jti": "2e624367-5ab9-4133-c537-861d1b19a85b",
+  "sub": "repo:{organization}/{repo}:ref:refs/heads/{branch}",
+  "aud": "sts.amazonaws.com",
+  "ref": "refs/heads/{branch}",
+  "sha": "ec7d38be2362bfaaf8878a1cebb4b0f695eab764",
+  "repository": "{organization}/{repo}",
+  "repository_owner": "{organization}",
+  "repository_owner_id": "3209407",
+  "run_id": "3339113236",
+  "run_number": "117",
+  "run_attempt": "3",
+  "repository_visibility": "public",
+  "repository_id": "376113068",
+  "actor_id": "25254258",
+  "actor": "{github username}",
+  "workflow": "Run security scans",
+  "head_ref": "",
+  "base_ref": "",
+  "event_name": "push",
+  "ref_type": "branch",
+  "job_workflow_ref": "{organization}/{repo}/.github/workflows/security.yml@refs/heads/bharvey-security-skip-build",
+  "enterprise": "centers-for-medicare-medicaid-services",
+  "iss": "https://token.actions.githubusercontent.com ",
+  "nbf": 1666887165,
+  "exp": 1666888065,
+  "iat": 1666887765
 }
 ```
 
-### Using the OIDC provider in a workflow
+The trust policy verifies claims in the JWT based on the following inputs:
 
-Note that the `id-token` permission is [required to authorize the request for the GitHub OIDC token](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#adding-permissions-settings). You can set the permission globally, or per job. If you forget this step, you will see the error `Error: Credentials could not be loaded, please check your action inputs: Could not load credentials from any providers`.
+#### Subject Claim (sub)
+
+Subject claims allow you to configure the GitHub branch or environment that is permitted to perform AWS actions via the OIDC provider. [Read more about subject claims](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#example-subject-claims)
+
+#### Audience Claim (aud)
+
+The principal sending the JWT needs to identify itself using the audience claim. The default for this value is set to `sts.amazonaws.com`, which is the [value used by the AWS credentials GitHub Action](https://github.com/aws-actions/configure-aws-credentials#assuming-a-role) that we recommend you use with these resources.
+
+### IAM Permissions Policy
+
+This external policy is grants permissions to perform AWS actions in the workflow. For example, if the workflow is scaling self-hosted runners in ECS or importing findings to Security Hub, a policy granting those permissions would need to be attached to the role that the AWS OIDC provider federates to upon validating the JWT from the GitHub OIDC provider.
+
+### Using the OIDC Provider in a Workflow
+
+Note that the `id-token: write` permission is [required to authorize the request for the GitHub OIDC token](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#adding-permissions-settings). You can set the permission globally, or per job. If you forget this step, you will see the error `Error: Credentials could not be loaded, please check your action inputs: Could not load credentials from any providers`.
 
 ```yml
 jobs:
@@ -66,14 +88,12 @@ jobs:
     permissions:
       id-token: write
     steps:
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: us-east-1
           role-to-assume: ${ARN of the role created by this module}
-
      ...
 ```
 
-We recommend that you store the ARN of the role created by this module as a GitHub secret called `OIDC_IAM_ROLE_ARN`, to make it easy to refer to the ARN in workflow runs.
+We recommend that you store the ARN of the role created by this module as a GitHub secret called `${environment}_OIDC_IAM_ROLE_ARN`, to make it easy to refer to the ARN in workflow runs.
