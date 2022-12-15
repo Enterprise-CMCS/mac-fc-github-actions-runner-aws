@@ -20,7 +20,7 @@ IAM OIDC identity providers are entities in IAM that describe an external identi
 
 ## IAM Role
 
-This is the role that the Actinos workflow assumes via the OIDC request. The permissions defined for this role dictate the scope of the short-term credentials that are generated and passed back to GitHub by AWS. The ARN of this role is output by each of the IaC methods listed, and is passed in to the [GitHub Action that configures AWS credentials for workflows](https://github.com/aws-actions/configure-aws-credentials#assuming-a-role). See the example below under "Using the OIDC Provider in a Workflow."
+This is the role that the Actions workflow assumes via the OIDC request. The permissions defined for this role dictate the scope of the short-term credentials that are generated and passed back to GitHub by AWS. The ARN of this role is output by each of the IaC methods listed, and is passed in to the [GitHub Action that configures AWS credentials for workflows](https://github.com/aws-actions/configure-aws-credentials#assuming-a-role). See the example below under "Using the OIDC Provider in a Workflow."
 
 ### IAM Trust Policy
 
@@ -49,12 +49,12 @@ This policy establishes the trust relationship between GitHub and AWS based on v
   "repository_id": "376113068",
   "actor_id": "25254258",
   "actor": "{github username}",
-  "workflow": "Run security scans",
+  "workflow": "{workflow name}",
   "head_ref": "",
   "base_ref": "",
   "event_name": "push",
   "ref_type": "branch",
-  "job_workflow_ref": "{organization}/{repo}/.github/workflows/security.yml@refs/heads/bharvey-security-skip-build",
+  "job_workflow_ref": "{organization}/{repo}/.github/workflows/{workflow name}.yml@refs/heads/{branch}",
   "enterprise": "centers-for-medicare-medicaid-services",
   "iss": "https://token.actions.githubusercontent.com ",
   "nbf": 1666887165,

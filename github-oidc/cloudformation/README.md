@@ -17,7 +17,7 @@ The permissions policy is defined by two optional parameters:
 
 1. For each AWS environment, create a parameters JSON file with the values needed for that environment. An [example file](./parameters-example.json) is provided.
 
-2. Deploy the OIDC resources in each AWS environment using [the provided CloudFormation template](.github/oidc/github-actions-oidc-template.yml) and the AWS CLI:
+2. Deploy the OIDC resources in each AWS environment using [the provided CloudFormation template](./github-oidc.yml) and the AWS CLI:
 
    - Verify the AWS account for the deploy
 
