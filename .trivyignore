@@ -5,6 +5,7 @@ CVE-2021-3918
 CVE-2021-44906
 CVE-2022-29244
 CVE-2022-3517
+CVE-2022-24999
 
 # accept the risk of internal dotnet-core dependencies for the runner
 
