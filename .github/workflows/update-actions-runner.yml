@@ -3,7 +3,7 @@ name: Get latest GitHub Actions Runner
 on:
   push:
     branches:
-      - bharvey-fix-update-runner-fix-build
+      - bharvey-fix-update-runner-skip-build
   schedule:
     - cron: "40 18 * * *"
 jobs:
