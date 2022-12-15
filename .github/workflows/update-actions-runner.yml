@@ -1,9 +1,6 @@
 name: Get latest GitHub Actions Runner
 
 on:
-  push:
-    branches:
-      - bharvey-fix-ci
   schedule:
     - cron: "40 18 * * *"
 jobs:
