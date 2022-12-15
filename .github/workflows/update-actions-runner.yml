@@ -1,6 +1,9 @@
 name: Get latest GitHub Actions Runner
 
 on:
+  push:
+    branches:
+      - bharvey-fix-update-runner-fix-build
   schedule:
     - cron: "40 18 * * *"
 jobs:
@@ -13,7 +16,7 @@ jobs:
       - name: Set release version and current version variables
         id: get-versions
         run: |
-          echo ::set-output name=current_tag::$(grep ACTIONS_VERSION Dockerfile | cut -d'=' -f 2 | sed -e 's/^"//' -e 's/"$//')
+          echo ::set-output name=current_tag::$(grep "ARG ACTIONS_VERSION" Dockerfile | cut -d'=' -f 2 | sed -e 's/^"//' -e 's/"$//')
           echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name[1:] | tostring")
 
       - name: Change release version in Dockerfile
