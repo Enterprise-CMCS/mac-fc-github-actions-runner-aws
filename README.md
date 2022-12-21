@@ -48,7 +48,7 @@ The `entrypoint.sh` script is what sets up the docker image to act as a runner, 
      - Give your token a note and check the box to give full control of private repositories
        ![Repository Permissions](./GitHubPAT2.png)
      - Once generated, be sure to save your token in a secure location such as 1pass or AWS Secrets Manager
-   - `REPO_OWNER` - The name of the repository owner, e.g. `CMSgov`
+   - `REPO_OWNER` - The name of the repository owner, e.g. `Enterprise-CMCS`
    - `REPO_NAME` - The name of the repository you are configuring the runners for
 3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
 4. In one of the workflows in the target repository, change the `runs-on` value to `self-hosted`. This will make the workflow use the registered self-hosted runner to complete its task, after which it will shut down.
@@ -107,16 +107,16 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 
 ### Optional Parameters
 
-| Name                     | Default Value | Description                                                                                                                                                              |
-| ------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| cloudwatch_log_retention | 731           | Number of days to retain Cloudwatch logs                                                                                                                                 |
-| ecr_repo_tag             | "latest"      | The tag to identify and pull the image in ECR repo                                                                                                                       |
-| ecs_desired_count        | 0             | Sets the default desired count for task definitions within the ECS service                                                                                               |
-| assign_public_ip         | "false"       | Choose whether to assign a public IP address to the Elastic Network Interface                                                                                            |
-| role_path                | "/"           | The path in which to create the assume roles and policies. Refer to [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html) for more |
-| permissions_boundary     | ""            | ARN of the policy that is used to set the permissions boundary for the role                                                                                              |
-| github_repo_owner        | "CMSgov"      | The name of the Github repo owner.                                                                                                                                       |
-| tags                     | {}            | Additional tags to apply                                                                                                                                                 |
+| Name                     | Default Value     | Description                                                                                                                                                              |
+| ------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| cloudwatch_log_retention | 731               | Number of days to retain Cloudwatch logs                                                                                                                                 |
+| ecr_repo_tag             | "latest"          | The tag to identify and pull the image in ECR repo                                                                                                                       |
+| ecs_desired_count        | 0                 | Sets the default desired count for task definitions within the ECS service                                                                                               |
+| assign_public_ip         | "false"           | Choose whether to assign a public IP address to the Elastic Network Interface                                                                                            |
+| role_path                | "/"               | The path in which to create the assume roles and policies. Refer to [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html) for more |
+| permissions_boundary     | ""                | ARN of the policy that is used to set the permissions boundary for the role                                                                                              |
+| github_repo_owner        | "Enterprise-CMCS" | The name of the Github repo owner.                                                                                                                                       |
+| tags                     | {}                | Additional tags to apply                                                                                                                                                 |
 
 ### Outputs
 
