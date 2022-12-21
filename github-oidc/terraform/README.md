@@ -8,7 +8,7 @@ This Terraform module is located in a sub-directory, since some users may wish t
 
 ```hcl
   module "github-actions-runner-aws" {
-    source = "github.com/CMSgov/github-actions-runner-aws//github-oidc/terraform" # double-slash denotes a sub-directory
+    source = "github.com/Enterprise-CMCS/github-actions-runner-aws//github-oidc/terraform" # double-slash denotes a sub-directory
 
     subject_claim_filters                         = ["repo:{your GitHub org}/{your GitHub repo}:{GitHub ref}"]
     # audience_list                               = [] # optional, defaults to ["sts.amazonaws.com"]

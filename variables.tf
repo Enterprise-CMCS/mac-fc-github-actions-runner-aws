@@ -65,7 +65,7 @@ variable "personal_access_token_arn" {
 variable "github_repo_owner" {
   description = "the name of the repo owner"
   type        = string
-  default     = "CMSgov"
+  default     = "Enterprise-CMCS"
 }
 
 variable "github_repo_name" {

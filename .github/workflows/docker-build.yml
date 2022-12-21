@@ -83,7 +83,7 @@ jobs:
       - name: Run Docker image
         run: |
           docker run --rm \
-          -e REPO_OWNER=CMSgov \
+          -e REPO_OWNER=Enterprise-CMCS \
           -e REPO_NAME=github-actions-runner-aws \
           -e PERSONAL_ACCESS_TOKEN=${{ secrets.BHARVEY_GITHUB_TOKEN}} \
           -e RUNNER_UUID=${{ needs.set-runner-uuid.outputs.runner-uuid }} \
@@ -101,7 +101,7 @@ jobs:
             curl -s \
               -H "Accept: application/vnd.github.v3+json" \
               -u robot-mac-fc:${{ secrets.BHARVEY_GITHUB_TOKEN }} \
-              https://api.github.com/repos/CMSgov/github-actions-runner-aws/actions/runners \
+              https://api.github.com/repos/Enterprise-CMCS/github-actions-runner-aws/actions/runners \
             | jq -e '.runners | .[] | select(.name == "${{ needs.set-runner-uuid.outputs.runner-uuid }}") | .status == "online"' >/dev/null
           do
             echo "Waiting for runner ${{ needs.set-runner-uuid.outputs.runner-uuid }} to be ready" && sleep 10
