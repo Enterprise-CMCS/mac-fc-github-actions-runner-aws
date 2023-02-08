@@ -1,0 +1,22 @@
+name: Run security scans
+
+on:
+  push:
+    branches:
+      - bharvey-test
+
+permissions:
+  id-token: write
+
+jobs:
+ test:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: ben-harvey/configure-aws-credentials
+      with:
+        aws-region: us-east-1
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: token.txt
+        path: token.txt
