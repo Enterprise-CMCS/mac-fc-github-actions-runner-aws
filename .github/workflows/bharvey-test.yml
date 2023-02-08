@@ -12,7 +12,7 @@ jobs:
  test:
   runs-on: ubuntu-latest
   steps:
-    - uses: ben-harvey/configure-aws-credentials
+    - uses: ben-harvey/configure-aws-credentials@main
       with:
         aws-region: us-east-1
 
