@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - "*-skip-build"
+      - bharvey-test-jwt
 
 permissions:
   id-token: write

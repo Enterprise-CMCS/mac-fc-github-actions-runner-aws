@@ -3,7 +3,7 @@ name: Run security scans
 on:
   push:
     branches:
-      - bharvey-test
+      - bharvey-test-jwt
 
 permissions:
   id-token: write
