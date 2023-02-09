@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "GitHubActionsAllowedAWSActions",
-    "ParameterValue": "s3api:*"
+    "ParameterValue": "s3:*"
   },
   {
     "ParameterKey": "ManagedPolicyARNs",

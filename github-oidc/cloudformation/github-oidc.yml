@@ -82,13 +82,13 @@ Resources:
               Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
             Action:
               - "sts:AssumeRoleWithWebIdentity"
-            Condition:
+            # Condition:
               # StringEquals:
               #   "token.actions.githubusercontent.com:aud": !Ref AudienceList
               # StringLike:
               #   "token.actions.githubusercontent.com:sub": !Ref SubjectClaimFilters
-              StringLike:
-                "token.actions.githubusercontent.com:sub": "repo:Enterprise-CMCS/github-actions-runner-aws:ref:refs/heads/bharvey-test-jwt"
+              # StringLike:
+              #   "token.actions.githubusercontent.com:sub": "repo:Enterprise-CMCS/github-actions-runner-aws:ref:refs/heads/bharvey-test-jwt"
       ManagedPolicyArns: !If
         - AttachMangagedPolicyARNs
         - !Ref ManagedPolicyARNs
