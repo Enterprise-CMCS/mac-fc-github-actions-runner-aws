@@ -14,14 +14,9 @@ jobs:
   steps:
     - uses: actions/checkout@v3
 
-    - uses: ./.github/actions/upload-asff
-    # - uses: ben-harvey/configure-aws-credentials@master
-    #   with:
-    #     aws-region: us-east-1
-    #     role-to-assume: foo
+    - uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-region: us-east-1
+        role-to-assume: ${{ secrets.BHARVEY_TEST_OIDC_ARN }}
 
-
-    # - uses: actions/upload-artifact@v3
-    #   with:
-    #     name: token.txt
-    #     path: token.txt
+    - run: aws s3api list-buckets
