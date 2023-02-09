@@ -31,7 +31,7 @@ The permissions policy is defined by two optional parameters:
      aws cloudformation deploy \
        --template-file github-oidc.yml \
        --stack-name github-oidc \
-       --parameter-overrides file://{path to parameters file} \
+       --parameter-overrides file://parameters-example.json \
        --capabilities CAPABILITY_IAM \
        --no-execute-changeset
      ```

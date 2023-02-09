@@ -56,12 +56,6 @@ Conditions:
       - ""
 
 Resources:
-  GitHubIdentityProvider:
-    Type: AWS::IAM::OIDCProvider
-    Properties:
-      Url: https://token.actions.githubusercontent.com
-      ThumbprintList: !Ref GithubActionsThumbprint
-      ClientIdList: !Ref AudienceList
   GitHubActionsPermissions:
     Type: AWS::IAM::Policy
     Condition: CreateGitHubActionsPermissionsPolicy
@@ -85,14 +79,16 @@ Resources:
           - Sid: RoleForGitHubOIDC
             Effect: Allow
             Principal:
-              Federated: !GetAtt GitHubIdentityProvider.Arn
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
             Action:
               - "sts:AssumeRoleWithWebIdentity"
             Condition:
-              StringEquals:
-                "token.actions.githubusercontent.com:aud": !Ref AudienceList
+              # StringEquals:
+              #   "token.actions.githubusercontent.com:aud": !Ref AudienceList
+              # StringLike:
+              #   "token.actions.githubusercontent.com:sub": !Ref SubjectClaimFilters
               StringLike:
-                "token.actions.githubusercontent.com:sub": !Ref SubjectClaimFilters
+                "token.actions.githubusercontent.com:job_workflow_ref": "Enterprise-CMCS/github-actions-runner-aws/.github/workflows/bharvey-test.yml@refs/heads/bharvey-test-jwt"
       ManagedPolicyArns: !If
         - AttachMangagedPolicyARNs
         - !Ref ManagedPolicyARNs

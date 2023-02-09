@@ -1,14 +1,14 @@
 [
   {
     "ParameterKey": "SubjectClaimFilters",
-    "ParameterValue": "repo:{organization}/{repo}:{github ref}"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "GitHubActionsAllowedAWSActions",
-    "ParameterValue": "{service1}:{action1}, {service2}:{action2}"
+    "ParameterValue": "s3api:*"
   },
   {
     "ParameterKey": "ManagedPolicyARNs",
-    "ParameterValue": "arn1, arn2"
+    "ParameterValue": ""
   }
 ]
