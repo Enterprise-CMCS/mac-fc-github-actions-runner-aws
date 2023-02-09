@@ -88,7 +88,7 @@ Resources:
               # StringLike:
               #   "token.actions.githubusercontent.com:sub": !Ref SubjectClaimFilters
               StringLike:
-                "token.actions.githubusercontent.com:job_workflow_ref": "Enterprise-CMCS/github-actions-runner-aws/.github/workflows/bharvey-test.yml@refs/heads/bharvey-test-jwt"
+                "token.actions.githubusercontent.com:sub": "repo:Enterprise-CMCS/github-actions-runner-aws:ref:refs/heads/bharvey-test-jwt"
       ManagedPolicyArns: !If
         - AttachMangagedPolicyARNs
         - !Ref ManagedPolicyARNs
