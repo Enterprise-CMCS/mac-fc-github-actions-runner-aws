@@ -10,7 +10,6 @@ permissions:
 
 jobs:
  test:
-  environment: DEV
   runs-on: ubuntu-latest
   steps:
     - uses: actions/checkout@v3
