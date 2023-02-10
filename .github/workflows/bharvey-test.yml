@@ -18,7 +18,7 @@ jobs:
     - uses: ben-harvey/configure-aws-credentials@master
       with:
         aws-region: us-east-1
-        role-to-assume: ${{ secrets.BHARVEY_TEST_OIDC_ARN }}
+        role-to-assume: arn:aws:iam::${{ secrets.DEV_AWS_ACCOUNT_ID }}:role/delegatedadmin/developer/github-oidc-GitHubActionsServiceRole-TREPDPZ0TY0J
 
     - run: aws s3api list-buckets
 
