@@ -13,9 +13,9 @@ RUN \
     && mkdir runner \
     && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
-FROM ubuntu:22.10
+FROM ubuntu:23.04
 
-RUN addgroup --gid 1000 "runner" && adduser --uid 1000 --ingroup "runner" --shell /bin/bash "runner" \
+RUN groupadd --gid 1234 "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
     && chown -R "runner":"runner" "/home/runner"
 
