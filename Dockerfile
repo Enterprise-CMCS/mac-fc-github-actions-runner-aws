@@ -15,7 +15,7 @@ RUN \
 
 FROM ubuntu:23.04
 
-RUN groupadd --gid 1234 "runner" && useradd -g "runner" --shell /bin/bash "runner" \
+RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
     && chown -R "runner":"runner" "/home/runner"
 
