@@ -1,0 +1,2 @@
+# see https://github.com/goodwithtech/dockle/issues/217 and https://github.com/dotnet/dotnet-docker/issues/4209 for why we're ignoring this
+CIS-DI-0009
