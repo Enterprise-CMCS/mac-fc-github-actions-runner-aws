@@ -3,6 +3,10 @@ name: Get latest GitHub Actions Runner
 on:
   schedule:
     - cron: "40 18 * * *"
+  # TODO remove
+  push:
+    branches:
+      - bharvey-secret
 jobs:
   update-runner:
     runs-on: ubuntu-latest
