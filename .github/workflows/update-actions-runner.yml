@@ -29,7 +29,7 @@ jobs:
         if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
         uses: peter-evans/create-pull-request@v4
         with:
-          token: ${{ secrets.BHARVEY_GITHUB_TOKEN }}
+          token: ${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }}
           commit-message: Update actions runner to new version
           author: robot-mac-fc <robot-mac-fc@users.noreply.github.com>
           branch: update-actions-runner-to-${{ steps.get-versions.outputs.release_tag }}
