@@ -12,7 +12,7 @@ variable "audience_list" {
 variable "thumbprint_list" {
   description = " A list of thumbprints for the OIDC identity provider's server certificate"
   type        = list(string)
-  default     = ["6938fd4d98bab03faadb97b34396831e3780aea1"] # see https://github.blog/changelog/2022-01-13-github-actions-update-on-oidc-based-deployments-to-aws/ and https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
+  default     = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"] # see https://github.blog/changelog/2023-06-27-github-actions-update-on-oidc-integration-with-aws/ and https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
 }
 
 variable "github_actions_permissions_policy_json_path" {
