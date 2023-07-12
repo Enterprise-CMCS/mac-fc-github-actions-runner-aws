@@ -83,8 +83,8 @@ jobs:
       - name: Run Docker image
         run: |
           docker run --rm \
-          -e REPO_OWNER=Enterprise-CMCS \
-          -e REPO_NAME=github-actions-runner-aws \
+          -e REPO_OWNER=${{ github.repository_owner }} \
+          -e REPO_NAME=$(basename ${{ github.repository }}) \
           -e PERSONAL_ACCESS_TOKEN=${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }} \
           -e RUNNER_UUID=${{ needs.set-runner-uuid.outputs.runner-uuid }} \
           ${{ env.SHA_TAG }}
@@ -97,12 +97,25 @@ jobs:
     steps:
       - name: Poll the GitHub Actions API until the runner is registered and online
         run: |
+          response_file=$(mktemp)
           until \
-            curl -s \
+            status=$(curl -s \
               -H "Accept: application/vnd.github.v3+json" \
               -u robot-mac-fc:${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }} \
-              https://api.github.com/repos/Enterprise-CMCS/github-actions-runner-aws/actions/runners \
-            | jq -e '.runners | .[] | select(.name == "${{ needs.set-runner-uuid.outputs.runner-uuid }}") | .status == "online"' >/dev/null
+              -o $response_file \
+              -w "%{http_code}" \
+              --url https://api.github.com/repos/${{ github.repository }}/actions/runners
+            )
+
+            if [ $? -ne 0 ] || [ $status -ne 200 ]; then
+              echo "error getting runner status from GitHub"
+              echo "curl exited with code $?"
+              echo "response status: $status"
+              echo "response body: $(cat $response_file)"
+              exit 1
+            fi
+
+            cat $response_file | jq -e '.runners | .[] | select(.name == "${{ needs.set-runner-uuid.outputs.runner-uuid }}") | .status == "online"' >/dev/null
           do
             echo "Waiting for runner ${{ needs.set-runner-uuid.outputs.runner-uuid }} to be ready" && sleep 10
           done
