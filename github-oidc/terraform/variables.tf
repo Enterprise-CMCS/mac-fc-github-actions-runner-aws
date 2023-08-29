@@ -25,3 +25,15 @@ variable "add_read_only_access" {
   type        = bool
   default     = false
 }
+
+variable "policy_read_from_file" {
+  description = "true if the IAM role policy is read from a file, else false"
+  type        = bool
+  default     = true
+}
+
+variable "policy_json" {
+  description = "The IAM role policy is in the format of a JSON string"
+  type        = string
+  default     = ""
+}
