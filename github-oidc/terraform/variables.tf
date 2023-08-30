@@ -33,7 +33,7 @@ variable "policy_read_from_file" {
 }
 
 variable "policy_json" {
-  description = "The IAM role policy is in the format of a JSON string"
+  description = "The IAM role policy in the format of a JSON string"
   type        = string
   default     = ""
 }
