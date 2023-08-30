@@ -44,5 +44,5 @@ resource "aws_iam_role" "github_actions_oidc" {
 resource "aws_iam_role_policy" "github_actions_permissions" {
   name   = "github-actions-permissions"
   role   = aws_iam_role.github_actions_oidc.id
-  policy = file("${path.root}/${var.github_actions_permissions_policy_json_path}")
+  policy = var.policy_read_from_file ? file("${path.root}/${var.github_actions_permissions_policy_json_path}") : var.policy_json
 }
