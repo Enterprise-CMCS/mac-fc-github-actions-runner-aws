@@ -5,7 +5,8 @@ RUN apk add --update --no-cache \
     tar \
     ca-certificates
 
-ARG ACTIONS_VERSION="2.309.0"
+ARG ACTIONS_VERSION
+RUN test -n "$ACTIONS_VERSION" || (echo "ACTIONS_VERSION not set" && exit 1)
 
 RUN \
     # install runner
@@ -13,7 +14,7 @@ RUN \
     && mkdir runner \
     && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
-FROM ubuntu:23.10
+FROM mcr.microsoft.com/playwright:focal
 
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \

@@ -35,6 +35,12 @@ variable "ecs_subnet_ids" {
   type        = list(string)
 }
 
+variable "ecs_task_ingress_sg_ids" {
+  description = "The source security group IDs that can ingress to the ECS task."
+  type        = set(string)
+  default     = []
+}
+
 variable "ecs_desired_count" {
   description = "Desired task count for ECS service"
   type        = number
@@ -71,6 +77,12 @@ variable "github_repo_owner" {
 variable "github_repo_name" {
   description = "the name of the repository"
   type        = string
+}
+
+variable "runner_labels" {
+  description = "Comma-separated list of runner labels"
+  type        = string
+  default = ""
 }
 
 variable "assign_public_ip" {

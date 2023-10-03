@@ -115,9 +115,9 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | assign_public_ip         | "false"           | Choose whether to assign a public IP address to the Elastic Network Interface                                                                                            |
 | role_path                | "/"               | The path in which to create the assume roles and policies. Refer to [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html) for more |
 | permissions_boundary     | ""                | ARN of the policy that is used to set the permissions boundary for the role                                                                                              |
-| github_repo_owner        | "Enterprise-CMCS" | The name of the Github repo owner.                                                                                                                                       |
+| github_repo_owner        | "Enterprise-CMCS" | The name of the Github repo owner                                                                                                                                        |
 | tags                     | {}                | Additional tags to apply                                                                                                                                                 |
-
+| runner_labels            | ""                | A comma-separated list of labels to apply to the runner                                                                                                                                            |
 ### Outputs
 
 None.

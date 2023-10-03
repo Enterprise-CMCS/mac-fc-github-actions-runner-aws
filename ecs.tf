@@ -75,6 +75,18 @@ resource "aws_security_group_rule" "allow_self" {
   self              = true
 }
 
+resource "aws_security_group_rule" "ecs_task_ingress_sg_ids" {
+  for_each = var.ecs_task_ingress_sg_ids
+
+  description       = "Allow ingress from the source security group to the ECS task"
+  type              = "ingress"
+  to_port           = -1
+  from_port         = -1
+  protocol          = "all"
+  security_group_id = aws_security_group.ecs_sg.id
+  source_security_group_id = each.value
+}
+
 ## ECS schedule task
 
 # Allows CloudWatch Rule to run ECS Task
@@ -209,7 +221,8 @@ resource "aws_ecs_task_definition" "runner_def" {
       awslogs_region            = data.aws_region.current.name,
       personal_access_token_arn = var.personal_access_token_arn,
       github_repo_owner         = var.github_repo_owner,
-      github_repo_name          = var.github_repo_name
+      github_repo_name          = var.github_repo_name,
+      runner_labels             = var.runner_labels
     }
   )
 

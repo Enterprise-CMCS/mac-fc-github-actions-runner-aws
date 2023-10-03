@@ -1,9 +1,16 @@
-name: Build and push
+name: Reusable build and push
 
 on:
-  push:
-    branches-ignore:
-      - "*-skip-build"
+  workflow_call:
+    inputs:
+      dockerfile:
+        description: "Path to the Dockerfile to build"
+        type: string
+        default: "latest.Dockerfile"
+      image_tag:
+        description: "Tag to apply to the Docker image"
+        type: string
+        default: "latest"    
 
 permissions:
   id-token: write
@@ -17,14 +24,15 @@ jobs:
     steps:
       - name: Set UUID for the runner
         id: set-uuid
-        run: echo "::set-output name=runner-uuid::$(uuidgen)"
+        run: echo "runner-uuid=$(uuidgen)" >> $GITHUB_OUTPUT
 
-  build-and-run:
-    name: Build, test, and run the runner image
+  build-and-test:
+    name: Build and test the runner image
     runs-on: ubuntu-latest
     needs: set-runner-uuid
     outputs:
-      sha-tag: ${{ steps.set-sha-tag.outputs.sha-tag }}
+      short-sha: ${{ steps.set-short-sha.outputs.short-sha }}
+      image-tag-with-sha: ${{ steps.set-image-tag-with-sha.outputs.image-tag-with-sha }}
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
@@ -37,31 +45,38 @@ jobs:
 
       - name: Log in to ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Set short SHA for tag
-        id: set-sha-tag
-        run: echo "::set-output name=sha-tag::$(git rev-parse --short "$GITHUB_SHA")"
-
-      - name: Set SHA tag for Docker image
-        run: echo "SHA_TAG=${{ steps.login-ecr.outputs.registry }}/github-actions-runner:${{ steps.set-sha-tag.outputs.sha-tag }}" >> $GITHUB_ENV
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set short SHA
+        id: set-short-sha
+        run: echo "short-sha=$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+
+      - name: Set tag with SHA for Docker image
+        id: set-image-tag-with-sha
+        run: echo "image-tag-with-sha=${{ steps.login-ecr.outputs.registry }}/github-actions-runner:${{ inputs.image_tag }}-${{ steps.set-short-sha.outputs.short-sha }}" >> $GITHUB_OUTPUT
+            
+      - name: Set Docker env variables
+        run: cat docker.env >> $GITHUB_ENV
 
       - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
-          load: true # export a tarball so we can test the image locally before pushing
-          tags: ${{ env.SHA_TAG }}
-          cache-from: type=gha # use the GitHub Cache API
+          file: ${{ inputs.dockerfile }}
+          tags: ${{ steps.set-image-tag-with-sha.outputs.image-tag-with-sha }}
+          build-args: ACTIONS_VERSION
+          cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: true # export a tarball so we can run the image tests locally before pushing to ECR
+          provenance: false # the default behavior adds an 'image index' which clutters up ECR, see https://github.com/docker/buildx/issues/1533
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.SHA_TAG }}
+          image-ref: ${{ steps.set-image-tag-with-sha.outputs.image-tag-with-sha }}
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
@@ -73,12 +88,26 @@ jobs:
         env:
           DOCKLE_ACCEPT_FILE_EXTENSIONS: pem
         with:
-          image: ${{ env.SHA_TAG }}
+          image: ${{ steps.set-image-tag-with-sha.outputs.image-tag-with-sha }}
           exit-code: "1"
 
       - name: Push Docker image to ECR with just SHA tag
-        run: |
-          docker push ${{ env.SHA_TAG }}
+        run: docker push ${{ steps.set-image-tag-with-sha.outputs.image-tag-with-sha }}
+  
+  run-docker-image:
+    name: Run Docker image
+    needs: [ set-runner-uuid, build-and-test ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+
+      - name: Log in to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Run Docker image
         run: |
@@ -87,11 +116,11 @@ jobs:
           -e REPO_NAME=$(basename ${{ github.repository }}) \
           -e PERSONAL_ACCESS_TOKEN=${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }} \
           -e RUNNER_UUID=${{ needs.set-runner-uuid.outputs.runner-uuid }} \
-          ${{ env.SHA_TAG }}
+          ${{ needs.build-and-test.outputs.image-tag-with-sha }}
 
   wait-for-runner:
     name: Wait for the runner to be ready
-    needs: set-runner-uuid
+    needs: [ set-runner-uuid, build-and-test ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -123,19 +152,19 @@ jobs:
 
   test-runner:
     name: Test the runner
-    needs: [wait-for-runner, set-runner-uuid]
+    needs: [ set-runner-uuid, wait-for-runner ]
     runs-on:
       - self-hosted
       - ${{ needs.set-runner-uuid.outputs.runner-uuid }}
     timeout-minutes: 10
     steps:
-      - name: step 1
+      - name: Test the runner
         run: echo "Self-hosted runner test was successful!"
 
   add-tag-if-main:
-    name: Add 'latest' tag to image if branch is 'main'
+    name: Add tag to image if branch is 'main'
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs: [test-runner, build-and-run]
+    needs: [test-runner, build-and-test]
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
@@ -144,9 +173,9 @@ jobs:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-      - name: Add 'latest' tag to image
+      - name: Add 'official' tag (without SHA) to image
         uses: abronin/ecr-retag-action@v1
         with:
           repository: github-actions-runner
-          tag: ${{ needs.build-and-run.outputs.sha-tag }}
-          new-tags: latest
+          tag: ${{ needs.build-and-test.outputs.image-tag-with-sha }}
+          new-tags: ${{ inputs.image_tag }}
