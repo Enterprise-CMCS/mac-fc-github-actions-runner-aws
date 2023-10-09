@@ -5,7 +5,7 @@ RUN apk add --update --no-cache \
     tar \
     ca-certificates
 
-ARG ACTIONS_VERSION="2.309.0"
+ARG ACTIONS_VERSION="2.310.0"
 
 RUN \
     # install runner
