@@ -10,26 +10,21 @@ This repository contains Dockerfiles for self-hosted GitHub Actions runners and 
 
 This module uses an existing ECR repository in AWS, and so does not provision one.
 
-## Runner Dockerfiles and image tags
+## Runner Dockerfiles
 
 - `latest.Dockerfile`: A minimal runner image based on Ubuntu. Reference this image with the `latest` image tag
 - `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright` image tag
 
+To build the Dockerfiles locally, you must first export the `ACTIONS_VERSION` environment variable, then tell Docker to take the `ACTIONS_VERSION` build argument from the environment, like so:
+
+```bash
+export $(cat docker.env) && docker build -f latest.Dockerfile --build-arg ACTIONS_VERSION -t local-latest .
+
+```
+
 ## Set Up
 
-1. Create and request access for a Github robot user.
-   - Create EUA account for robot user
-   - Create Github account for robot user
-   - Request permission for the robot user within Github
-   - Create an access token for the robot user within Github
-   - Store the access token in AWS Secrets Manager
-     - The secret's name must start with `github-runner` due to IAM restrictions on the ecs-task-role
-2. Set up an IAM user in AWS with the necessary permissions to support the docker-build.yml workflow script included. See `IAM User Permissions` section below for details.
-   - Once you have your user, be sure to add the access key details to your repository's Secrets
-3. Provision the Terraform module in this repository.
-4. You should now be able to push images to the org level ECR repository via a push to your main branch or a new release. An ECS Cluster and Service should be set up for you.
-5. See the [documentation](Usage.md) on usage of the runner on how to deploy runners to your service.
-6. For Slack notifications (optional), follow [these instructions to set up an incoming webhook](https://api.slack.com/messaging/webhooks) and store the webhook URL in GitHub secrets as `SLACK_WEBHOOK_URL`
+See [Confluence](https://confluenceent.cms.gov/display/MDSO/Guide+to+Github+Actions+Self-Hosted+Runners) for the most up-to-date setup steps
 
 ### IAM Permissions
 
@@ -127,7 +122,7 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 
 ### Outputs
 
-None.
+See `outputs.tf`
 
 ### Requirements
 
