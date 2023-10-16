@@ -3,6 +3,9 @@ name: Get latest GitHub Actions Runner
 on:
   schedule:
     - cron: "40 18 * * *"
+  push: # TODO remove
+    branches:
+      - bharvey-playwright-image
 
 jobs:
   update-runner:
@@ -17,13 +20,20 @@ jobs:
           echo "current_tag=$(awk -F= '/ACTIONS_VERSION/ {print $2}' docker.env | tr -d '"')" >> GITHUB_OUTPUT
           echo "release_tag=$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r ".tag_name[1:] | tostring")" >> GITHUB_OUTPUT
 
+      - name: Compare release and current versions
+        uses: madhead/semver-utils@latest
+        id: compare-versions
+        with:
+          version: ${{ steps.get-versions.outputs.release_tag }}
+          compare-to: ${{ steps.get-versions.outputs.current_tag }}
+          lenient: false # fail on error parsing versions
+
       - name: Change release version in docker.env
-        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
-        id: update-version
+        if: ${{ steps.compare-versions.outputs.comparison-result == '>' }}
         run: sed -i 's|'"${{ steps.get-versions.outputs.current_tag }}"'|'"${{ steps.get-versions.outputs.release_tag }}"'|g' docker.env
 
       - name: Create Pull Request
-        if: ${{ steps.get-versions.outputs.release_tag != steps.get-versions.outputs.current_tag }}
+        if: ${{ steps.compare-versions.outputs.comparison-result == '>' }}
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }}
