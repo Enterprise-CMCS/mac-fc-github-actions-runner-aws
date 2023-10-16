@@ -26,7 +26,7 @@ fi
 # Use the RUNNER_UUID env var if it exists
 UNIQUE_ID=${RUNNER_UUID:-$(uuidgen)}
 
-# Register the runner: 
+# Register the runner:
 # - disable updates since we manage them manually via the container image
 #   - https://docs.github.com/en/actions/hosting-your-own-runners/autoscaling-with-self-hosted-runners#controlling-runner-software-updates-on-self-hosted-runners
 # - register as an ephemeral runner
@@ -34,7 +34,7 @@ UNIQUE_ID=${RUNNER_UUID:-$(uuidgen)}
 # - labels argument to config.sh is a comma-separated list
 #    - https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/using-labels-with-self-hosted-runners#programmatically-assign-labels
 
-LABELS=$(echo $UNIQUE_ID $RUNNER_LABELS | tr ' ' ',' )
+LABELS=$(echo "$UNIQUE_ID" "$RUNNER_LABELS" | tr ' ' ',' )
 
 ./config.sh \
       --unattended \

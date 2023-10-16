@@ -82,7 +82,7 @@ variable "github_repo_name" {
 variable "runner_labels" {
   description = "Comma-separated list of runner labels"
   type        = string
-  default = ""
+  default     = ""
 }
 
 variable "assign_public_ip" {

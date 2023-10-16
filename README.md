@@ -2,13 +2,18 @@
 
 ## About
 
-This repository contains the Dockerfile for a self-hosted GitHub Actions runner and an associated Terraform module which can be run in your environment to provision:
+This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module which can be run in your environment to provision:
 
 - ECS Cluster
 - ECS Service
 - ECS Fargate task definition to spin up an instance of this runner _per job_ in your GitHub Actions workflow
 
 This module uses an existing ECR repository in AWS, and so does not provision one.
+
+## Runner Dockerfiles and image tags
+
+- `latest.Dockerfile`: A minimal runner image based on Ubuntu. Reference this image with the `latest` image tag
+- `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright` image tag
 
 ## Set Up
 
@@ -76,6 +81,7 @@ module "github-actions-runner-aws" {
   # GitHub Runner variables
   personal_access_token_arn = "${secretsmanager.token.arn}"
   github_repo_name          = "${repo_name}"
+  ecr_repo_tag              = # "latest"/"playwright"
 }
 ```
 
@@ -118,6 +124,7 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | github_repo_owner        | "Enterprise-CMCS" | The name of the Github repo owner                                                                                                                                        |
 | tags                     | {}                | Additional tags to apply                                                                                                                                                 |
 | runner_labels            | ""                | A comma-separated list of labels to apply to the runner                                                                                                                                            |
+
 ### Outputs
 
 None.

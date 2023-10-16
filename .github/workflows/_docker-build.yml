@@ -10,7 +10,7 @@ on:
       image_tag:
         description: "Tag to apply to the Docker image"
         type: string
-        default: "latest"    
+        default: "latest"
 
 permissions:
   id-token: write
@@ -57,7 +57,7 @@ jobs:
       - name: Set image tag with ECR repo
         id: set-image-tag-with-repo
         run: echo "image-tag-with-repo=${{ steps.login-ecr.outputs.registry }}/github-actions-runner:${{ steps.set-image-tag-with-sha.outputs.image-tag-with-sha }}" >> $GITHUB_OUTPUT
-            
+
       - name: Set Docker env variables
         run: cat docker.env >> $GITHUB_ENV
 
@@ -93,7 +93,7 @@ jobs:
 
       - name: Push Docker image to ECR with just SHA tag
         run: docker push ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
-  
+
   run-docker-image:
     name: Run Docker image
     needs: [ set-runner-uuid, build-and-test ]

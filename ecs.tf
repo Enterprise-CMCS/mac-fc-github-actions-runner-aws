@@ -78,12 +78,12 @@ resource "aws_security_group_rule" "allow_self" {
 resource "aws_security_group_rule" "ecs_task_ingress_sg_ids" {
   for_each = var.ecs_task_ingress_sg_ids
 
-  description       = "Allow ingress from the source security group to the ECS task"
-  type              = "ingress"
-  to_port           = -1
-  from_port         = -1
-  protocol          = "all"
-  security_group_id = aws_security_group.ecs_sg.id
+  description              = "Allow ingress from the source security group to the ECS task"
+  type                     = "ingress"
+  to_port                  = -1
+  from_port                = -1
+  protocol                 = "all"
+  security_group_id        = aws_security_group.ecs_sg.id
   source_security_group_id = each.value
 }
 
