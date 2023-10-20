@@ -21,5 +21,6 @@ jobs:
       ./.github/workflows/_docker-build.yml
     with:
       dockerfile: playwright.Dockerfile
-      image_tag: playwright
+      feature-branch-image-tag: playwright
+      default-branch-image-tag: playwright
     secrets: inherit

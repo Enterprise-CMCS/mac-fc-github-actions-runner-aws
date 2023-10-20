@@ -7,8 +7,12 @@ on:
         description: "Path to the Dockerfile to build"
         type: string
         default: "latest.Dockerfile"
-      image_tag:
-        description: "Tag to apply to the Docker image"
+      feature-branch-image-tag:
+        description: "Tag to apply to the Docker image when workflow runs on a feature branch"
+        type: string
+        default: ""
+      default-branch-image-tag:
+        description: "Tag to apply to the Docker image when workflow runs on the default branch"
         type: string
         default: "latest"
 
@@ -50,9 +54,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set short SHA
+        id: set-short-sha
+        run: echo "short-sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Set image tag with short SHA
         id: set-image-tag-with-sha
-        run: echo "image-tag-with-sha=${{ inputs.image_tag }}-$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_OUTPUT
+        run: |
+          if [ "${{ inputs.feature-branch-image-tag }}" != "" ]; then
+            echo "image-tag-with-sha=${{ inputs.feature-branch-image-tag }}-${{ steps.set-short-sha.outputs.short-sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "image-tag-with-sha=${{ steps.set-short-sha.outputs.short-sha }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set image tag with ECR repo
         id: set-image-tag-with-repo
@@ -161,9 +174,9 @@ jobs:
       - name: Test the runner
         run: echo "Self-hosted runner test was successful!"
 
-  add-tag-if-main:
-    name: Add tag to image if branch is 'main'
-    if: ${{ github.ref == 'refs/heads/main' }}
+  add-tag-if-default-branch:
+    name: Add tag to image if running on the default branch
+    if: ${{ github.ref_name == github.event.repository.default_branch }}
     needs: [test-runner, build-and-test]
     runs-on: ubuntu-latest
     steps:
@@ -173,9 +186,9 @@ jobs:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
 
-      - name: Add 'official' tag (without SHA) to image
+      - name: Add default branch tag to image
         uses: abronin/ecr-retag-action@v1
         with:
           repository: github-actions-runner
           tag: ${{ needs.build-and-test.outputs.image-tag-with-sha }}
-          new-tags: ${{ inputs.image_tag }}
+          new-tags: ${{ inputs.default-branch-image-tag }}

@@ -35,12 +35,6 @@ variable "ecs_subnet_ids" {
   type        = list(string)
 }
 
-variable "ecs_task_ingress_sg_ids" {
-  description = "The source security group IDs that can ingress to the ECS task."
-  type        = set(string)
-  default     = []
-}
-
 variable "ecs_desired_count" {
   description = "Desired task count for ECS service"
   type        = number

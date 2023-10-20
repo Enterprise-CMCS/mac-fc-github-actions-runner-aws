@@ -15,11 +15,10 @@ This module uses an existing ECR repository in AWS, and so does not provision on
 - `latest.Dockerfile`: A minimal runner image based on Ubuntu. Reference this image with the `latest` image tag
 - `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright` image tag
 
-To build the Dockerfiles locally, you must first export the `ACTIONS_VERSION` environment variable, then tell Docker to take the `ACTIONS_VERSION` build argument from the environment, like so:
+The current version of the runner is stored in `docker.env` as `ACTIONS_VERSION`. To build the Dockerfiles locally, you must first export this environment variable, then tell Docker to use it as a [build argument from the environment](https://docs.docker.com/engine/reference/commandline/build/#build-arg), like so:
 
 ```bash
 export $(cat docker.env) && docker build -f latest.Dockerfile --build-arg ACTIONS_VERSION -t local-latest .
-
 ```
 
 ## Set Up
