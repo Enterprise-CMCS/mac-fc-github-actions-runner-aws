@@ -83,7 +83,7 @@ jobs:
           build-args: ACTIONS_VERSION
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          load: true # export a tarball so we can run the image tests locally before pushing to ECR
+          load: true # this loads the image to the current docker instance so it can be referenced by tag in the subsequent steps: https://docs.docker.com/engine/reference/commandline/buildx_build/#docker
           provenance: false # the default behavior adds an 'image index' which clutters up ECR, see https://github.com/docker/buildx/issues/1533
 
       - name: Run Trivy vulnerability scanner
