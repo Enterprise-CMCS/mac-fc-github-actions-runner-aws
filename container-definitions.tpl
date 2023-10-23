@@ -8,7 +8,8 @@
     "portMappings": [],
     "environment": [
       {"name": "REPO_OWNER", "value": "${github_repo_owner}"},
-      {"name": "REPO_NAME", "value": "${github_repo_name}"}
+      {"name": "REPO_NAME", "value": "${github_repo_name}"},
+      {"name": "RUNNER_LABELS", "value": "${runner_labels}"}
     ],
     "secrets": [
       {"name": "PERSONAL_ACCESS_TOKEN", "valueFrom": "${personal_access_token_arn}"}

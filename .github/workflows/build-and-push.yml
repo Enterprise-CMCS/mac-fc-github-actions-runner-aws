@@ -1,0 +1,26 @@
+name: Build and push runner images
+
+on:
+  push:
+    branches-ignore:
+      - "*-skip-build"
+
+permissions:
+  id-token: write
+
+jobs:
+  latest:
+    name: Build and push 'latest' image
+    uses:
+      ./.github/workflows/_docker-build.yml
+    secrets: inherit
+
+  playwright:
+    name: Build and push 'playwright' image
+    uses:
+      ./.github/workflows/_docker-build.yml
+    with:
+      dockerfile: playwright.Dockerfile
+      feature-branch-image-tag: playwright
+      default-branch-image-tag: playwright
+    secrets: inherit

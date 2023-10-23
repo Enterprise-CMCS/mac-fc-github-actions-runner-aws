@@ -209,7 +209,8 @@ resource "aws_ecs_task_definition" "runner_def" {
       awslogs_region            = data.aws_region.current.name,
       personal_access_token_arn = var.personal_access_token_arn,
       github_repo_owner         = var.github_repo_owner,
-      github_repo_name          = var.github_repo_name
+      github_repo_name          = var.github_repo_name,
+      runner_labels             = var.runner_labels
     }
   )
 

@@ -73,6 +73,12 @@ variable "github_repo_name" {
   type        = string
 }
 
+variable "runner_labels" {
+  description = "Comma-separated list of runner labels"
+  type        = string
+  default     = ""
+}
+
 variable "assign_public_ip" {
   description = "Choose whether to assign a public IP address to the Elastic Network Interface."
   type        = bool

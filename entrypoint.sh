@@ -31,12 +31,17 @@ UNIQUE_ID=${RUNNER_UUID:-$(uuidgen)}
 #   - https://docs.github.com/en/actions/hosting-your-own-runners/autoscaling-with-self-hosted-runners#controlling-runner-software-updates-on-self-hosted-runners
 # - register as an ephemeral runner
 #   - https://docs.github.com/en/actions/hosting-your-own-runners/autoscaling-with-self-hosted-runners#using-ephemeral-runners-for-autoscaling
+# - labels argument to config.sh is a comma-separated list
+#    - https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/using-labels-with-self-hosted-runners#programmatically-assign-labels
+
+LABELS=$(echo "$UNIQUE_ID" "$RUNNER_LABELS" | tr ' ' ',' )
+
 ./config.sh \
       --unattended \
       --url "https://github.com/${REPO_OWNER}/${REPO_NAME}" \
       --token "${REGISTRATION_TOKEN}" \
       --name "${UNIQUE_ID}" \
-      --labels "${UNIQUE_ID}" \
+      --labels "${LABELS}" \
       --work work-dir \
       --replace \
       --disableupdate \

@@ -2,7 +2,7 @@
 
 ## About
 
-This repository contains the Dockerfile for a self-hosted GitHub Actions runner and an associated Terraform module which can be run in your environment to provision:
+This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module which can be run in your environment to provision:
 
 - ECS Cluster
 - ECS Service
@@ -10,21 +10,20 @@ This repository contains the Dockerfile for a self-hosted GitHub Actions runner 
 
 This module uses an existing ECR repository in AWS, and so does not provision one.
 
+## Runner Dockerfiles
+
+- `latest.Dockerfile`: A minimal runner image based on Ubuntu. Reference this image with the `latest` image tag
+- `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright` image tag
+
+The current version of the runner is stored in `docker.env` as `ACTIONS_VERSION`. To build the Dockerfiles locally, you must first export this environment variable, then tell Docker to use it as a [build argument from the environment](https://docs.docker.com/engine/reference/commandline/build/#build-arg), like so:
+
+```bash
+export $(cat docker.env) && docker build -f latest.Dockerfile --build-arg ACTIONS_VERSION -t local-latest .
+```
+
 ## Set Up
 
-1. Create and request access for a Github robot user.
-   - Create EUA account for robot user
-   - Create Github account for robot user
-   - Request permission for the robot user within Github
-   - Create an access token for the robot user within Github
-   - Store the access token in AWS Secrets Manager
-     - The secret's name must start with `github-runner` due to IAM restrictions on the ecs-task-role
-2. Set up an IAM user in AWS with the necessary permissions to support the docker-build.yml workflow script included. See `IAM User Permissions` section below for details.
-   - Once you have your user, be sure to add the access key details to your repository's Secrets
-3. Provision the Terraform module in this repository.
-4. You should now be able to push images to the org level ECR repository via a push to your main branch or a new release. An ECS Cluster and Service should be set up for you.
-5. See the [documentation](Usage.md) on usage of the runner on how to deploy runners to your service.
-6. For Slack notifications (optional), follow [these instructions to set up an incoming webhook](https://api.slack.com/messaging/webhooks) and store the webhook URL in GitHub secrets as `SLACK_WEBHOOK_URL`
+See [Confluence](https://confluenceent.cms.gov/display/MDSO/Guide+to+Github+Actions+Self-Hosted+Runners) for the most up-to-date setup steps
 
 ### IAM Permissions
 
@@ -76,6 +75,7 @@ module "github-actions-runner-aws" {
   # GitHub Runner variables
   personal_access_token_arn = "${secretsmanager.token.arn}"
   github_repo_name          = "${repo_name}"
+  ecr_repo_tag              = # "latest"/"playwright"
 }
 ```
 
@@ -115,12 +115,13 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | assign_public_ip         | "false"           | Choose whether to assign a public IP address to the Elastic Network Interface                                                                                            |
 | role_path                | "/"               | The path in which to create the assume roles and policies. Refer to [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html) for more |
 | permissions_boundary     | ""                | ARN of the policy that is used to set the permissions boundary for the role                                                                                              |
-| github_repo_owner        | "Enterprise-CMCS" | The name of the Github repo owner.                                                                                                                                       |
+| github_repo_owner        | "Enterprise-CMCS" | The name of the Github repo owner                                                                                                                                        |
 | tags                     | {}                | Additional tags to apply                                                                                                                                                 |
+| runner_labels            | ""                | A comma-separated list of labels to apply to the runner                                                                                                                                            |
 
 ### Outputs
 
-None.
+See `outputs.tf`
 
 ### Requirements
 
