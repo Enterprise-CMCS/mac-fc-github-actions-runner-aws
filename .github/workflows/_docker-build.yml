@@ -39,7 +39,7 @@ jobs:
       image-tag-with-repo: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
