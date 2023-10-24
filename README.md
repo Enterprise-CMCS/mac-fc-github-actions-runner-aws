@@ -13,7 +13,7 @@ This module uses an existing ECR repository in AWS, and so does not provision on
 ## Runner Dockerfiles
 
 - `latest.Dockerfile`: A minimal runner image based on Ubuntu. Reference this image with the `latest` image tag
-- `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright` image tag
+- `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright-v{semver}` image tag, where `{semver}` is the version of the Playwright base image defined in the `playwright.Dockerfile`
 
 The current version of the runner is stored in `docker.env` as `ACTIONS_VERSION`. To build the Dockerfiles locally, you must first export this environment variable, then tell Docker to use it as a [build argument from the environment](https://docs.docker.com/engine/reference/commandline/build/#build-arg), like so:
 
