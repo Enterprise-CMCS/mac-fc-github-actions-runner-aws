@@ -38,7 +38,7 @@ resource "aws_iam_role" "github_actions_oidc" {
   # path and permssions boundary as required per https://cloud.cms.gov/creating-identity-access-management-policies
   path                 = "/delegatedadmin/developer/"
   permissions_boundary = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/cms-cloud-admin/ct-ado-poweruser-permissions-boundary-policy"
-  managed_policy_arns  = var.add_read_only_access ? ["arn:aws:iam::aws:policy/ReadOnlyAccess"] : [""]
+  managed_policy_arns  = var.add_read_only_access ? ["arn:aws:iam::aws:policy/ReadOnlyAccess"] : []
 }
 
 resource "aws_iam_role_policy" "github_actions_permissions" {
