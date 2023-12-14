@@ -1,21 +1,9 @@
 # ECR variables
 
-variable "ecr_repo_url" {
-  type        = string
-  description = "The URL of the github actions ECR repository"
-  default     = "037370603820.dkr.ecr.us-east-1.amazonaws.com/github-actions-runner"
-}
-
 variable "ecr_repo_tag" {
   type        = string
   description = "The tag to identify and pull the image in ECR repository"
   default     = "latest"
-}
-
-variable "ecr_repository_arns" {
-  description = "The ECR ARNs referenced by aws_iam_policy_document task_role_policy_doc"
-  type        = list(string)
-  default     = ["arn:aws:ecr:us-east-1:037370603820:repository/github-actions-runner"]
 }
 
 # ECS variables
@@ -23,6 +11,10 @@ variable "ecr_repository_arns" {
 variable "environment" {
   type        = string
   description = "Environment name"
+}
+
+variable "account_id" {
+  type = string
 }
 
 variable "ecs_vpc_id" {
