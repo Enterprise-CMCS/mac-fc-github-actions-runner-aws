@@ -6,6 +6,12 @@ variable "ecr_repo_tag" {
   default     = "latest"
 }
 
+variable "ecr_repo_url" {
+  description = "The URL of the ECR registry that hosts the github actions image"
+  type        = string
+  default     = "037370603820.dkr.ecr.us-east-1.amazonaws.com/github-actions-runner"
+}
+
 # ECS variables
 
 variable "environment" {

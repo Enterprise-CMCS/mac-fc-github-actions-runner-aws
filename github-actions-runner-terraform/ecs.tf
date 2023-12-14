@@ -203,7 +203,7 @@ resource "aws_ecs_task_definition" "runner_def" {
       container_cpu             = var.container_cpu,
       container_memory          = var.container_memory,
       gh_name_hash              = local.gh_name_hash,
-      ecr_repo_url              = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com/github-actions-runner",
+      ecr_repo_url              = var.ecr_repo_url,
       ecr_repo_tag              = var.ecr_repo_tag,
       awslogs_group             = local.awslogs_group,
       awslogs_region            = data.aws_region.current.name,
