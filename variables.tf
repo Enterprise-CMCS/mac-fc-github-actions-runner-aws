@@ -13,10 +13,6 @@ variable "environment" {
   description = "Environment name"
 }
 
-variable "account_id" {
-  type = string
-}
-
 variable "ecs_vpc_id" {
   type        = string
   description = "VPC ID to be used by ECS"
