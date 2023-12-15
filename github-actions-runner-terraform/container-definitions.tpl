@@ -26,7 +26,7 @@
     "mountPoints": [],
     "volumesFrom": [],
     "entryPoint": [
-            "./entrypoint.sh"
+            "../entrypoint.sh"
     ]
   }
 ]
