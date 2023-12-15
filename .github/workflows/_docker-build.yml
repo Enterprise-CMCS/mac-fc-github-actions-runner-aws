@@ -75,7 +75,7 @@ jobs:
         run: cat docker.env >> $GITHUB_ENV
 
       - name: Build Docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ${{ inputs.dockerfile }}
