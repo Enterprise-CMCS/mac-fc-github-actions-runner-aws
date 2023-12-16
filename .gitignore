@@ -3,3 +3,4 @@ test_env
 
 .terraform.lock.hcl
 .terraform
+terraform.tfstate.backup
