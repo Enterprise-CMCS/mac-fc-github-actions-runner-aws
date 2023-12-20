@@ -1,6 +1,5 @@
 .DS_Store
 test_env
 
-.terraform.lock.hcl
 .terraform
 terraform.tfstate.backup
