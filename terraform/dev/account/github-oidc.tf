@@ -1,8 +1,8 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
-  client_id_list  = var.audience_list
-  thumbprint_list = var.thumbprint_list
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
   url             = "https://token.actions.githubusercontent.com"
 }
 
@@ -15,13 +15,14 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:aud"
-      values   = var.audience_list
+      values   = ["sts.amazonaws.com"]
+
     }
 
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = var.subject_claim_filters
+      values   = ["repo:Enterprise-CMCS/mac-fc-github-actions-runner-aws:*"]
     }
 
     principals {
