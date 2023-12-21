@@ -11,4 +11,16 @@ terraform {
 
 provider "aws" {
   allowed_account_ids = ["037370603820"]
+
+  default_tags {
+    tags = {
+      Maintainer  = "cms-macfc+archive@corbalt.com"
+      Owner       = "cms-macfc+archive@corbalt.com"
+      Environment = "dev"
+      Application = "mac-fc-github-actions-runner"
+      Business    = "MACBIS"
+      Automated   = "Terraform"
+      stack       = "dev"
+    }
+  }
 }
