@@ -7,6 +7,14 @@ terraform {
       version = "~>5.30.0"
     }
   }
+
+  backend "s3" {
+    bucket         = "github-actions-runner-dev-tfstate"
+    key            = "account/state"
+    region         = "us-east-1"
+    dynamodb_table = "github-actions-runner-dev-lock-table"
+    encrypt        = true
+  }
 }
 
 provider "aws" {
