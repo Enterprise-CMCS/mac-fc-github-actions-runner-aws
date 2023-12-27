@@ -56,7 +56,7 @@ jobs:
 
   test-self-hosted:
     name: Testing self-hosted tag
-    needs: start-runner
+    needs: start-runners
     runs-on: self-hosted
     steps:
       - name: step 1
@@ -64,7 +64,7 @@ jobs:
 
   test-internal-tools:
     name: Testing internal tool connectivity
-    needs: start-runner
+    needs: start-runners
     runs-on: self-hosted
     steps:
       - name: curl selenium
@@ -121,7 +121,7 @@ You should be sure to install any other prerequisites onto the self-hosted runne
 
 ```yaml
 - name: Set up Node
-  uses: actions/setup-node@v3
+  uses: actions/setup-node@v4
   with:
-    node-version: 16
+    node-version: 20
 ```
