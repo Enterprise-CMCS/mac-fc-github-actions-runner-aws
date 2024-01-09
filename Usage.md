@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
@@ -79,7 +79,7 @@ jobs:
     needs: [start-runners, test-self-hosted, test-internal-tools]
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
