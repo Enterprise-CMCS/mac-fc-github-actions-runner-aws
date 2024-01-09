@@ -24,7 +24,7 @@ Note: In order to successfully create IAM resources in CMS Cloud, developers mus
 
 An IAM OIDC identity provider is a resource in IAM that describes an external identity provider (IdP) service that supports the [OpenID Connect (OIDC) standard](http://openid.net/connect/). The AWS identity provider resource is configured with the URL (`token.actions.githubusercontent.com`) and server certificate thumbprint of the GitHub OIDC provider. A valid default value for the thumbprint is provided, but thumbprint can also be obtained by following [these steps](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html).
 
-NOTE: AWS secures communication with the GitHub IdP through it's library of trusted root certificate authorities (CAs) instead of using a certificate thumbprint to verify GitHub's IdP server certificate. The thumbprint remains in the AWS identity provider configuration, but is no longer used for validation. source: [AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html)
+NOTE: AWS secures communication with the GitHub IdP through its library of trusted root certificate authorities (CAs) instead of using a certificate thumbprint to verify GitHub's IdP server certificate. The thumbprint remains in the AWS identity provider configuration, but is no longer used for validation. source: [AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html)
 
 ## IAM Role
 

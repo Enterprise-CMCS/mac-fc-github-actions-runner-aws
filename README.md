@@ -8,7 +8,7 @@ This repository contains Dockerfiles for self-hosted GitHub Actions runners and 
 - ECS Service
 - ECS Fargate task definition to spin up an instance of this runner _per job_ in your GitHub Actions workflow
 
-This module uses the ECR repository running in the MACBIS Shared DSO Dev account, managed in the `terraform/dev/account` directory, and accessible by the MACBIS organization.
+This module uses the ECR repository created in the MACBIS Shared DSO Dev account, managed in the `terraform/dev/account` directory, and accessible by the MACBIS organization.
 
 ## Runner Dockerfiles
 
