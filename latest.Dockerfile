@@ -14,7 +14,7 @@ RUN \
     && mkdir runner \
     && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
-FROM ubuntu:23.10
+FROM ubuntu:24.04
 
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
