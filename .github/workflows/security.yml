@@ -154,7 +154,7 @@ jobs:
         id: get-branch-name
 
       - name: Cache AWS CLI
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-aws-cli
         with:
           path: aws
@@ -181,7 +181,7 @@ jobs:
         run: mkdir sonar_scanner
 
       - name: Cache SonarQube
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-sonarqube
         with:
           path: sonar_scanner
@@ -194,7 +194,7 @@ jobs:
           && unzip sonar_scanner/sonar-scanner.zip -d sonar_scanner
 
       - name: Cache SonarQube scanner binaries
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /home/runner/.sonar/cache
           key: ${{ runner.os }}-sonarqube
