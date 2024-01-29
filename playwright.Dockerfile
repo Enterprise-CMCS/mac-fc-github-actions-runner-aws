@@ -1,4 +1,4 @@
-FROM alpine:3.19.0 as install
+FROM alpine:3.19.1 as install
 
 RUN apk add --update --no-cache \
     curl \
