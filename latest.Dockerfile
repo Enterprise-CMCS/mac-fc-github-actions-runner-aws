@@ -14,6 +14,8 @@ RUN \
     && mkdir runner \
     && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
+FROM gcr.io/kaniko-project/executor:debug as kaniko
+
 FROM ubuntu:24.04
 
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
@@ -23,6 +25,8 @@ RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
 COPY --from=install /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=install ./runner /home/runner
 
+
+
 # install runner dependencies
 RUN /home/runner/bin/installdependencies.sh
 
@@ -30,9 +34,11 @@ RUN /home/runner/bin/installdependencies.sh
 RUN apt-get update \
     && apt-get -qq -y install --no-install-recommends \
     curl \
+    bash \
     jq \
     uuid-runtime \
     unzip \
+    podman \
     && rm -rf /var/lib/apt/lists
 
 WORKDIR /home/runner
@@ -40,4 +46,5 @@ USER runner
 
 # keep this layer last so changes to the entrypoint script don't trigger rebuilds
 COPY --chown=runner:runner entrypoint.sh .
+RUN chmod +x entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
