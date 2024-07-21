@@ -231,8 +231,8 @@ resource "aws_ecs_service" "actions-runner" {
   desired_count   = var.ecs_desired_count
   launch_type     = "EC2"
   network_configuration {
-    subnets          = var.ecs_subnet_ids
-    security_groups  = [aws_security_group.ecs_sg.id]
+    subnets         = var.ecs_subnet_ids
+    security_groups = [aws_security_group.ecs_sg.id]
   }
 
   tags = {
