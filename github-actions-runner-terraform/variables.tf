@@ -1,15 +1,13 @@
-# ECR variables
-
-variable "ecr_repo_tag" {
-  type        = string
-  description = "The tag to identify and pull the image in ECR repository"
-  default     = "latest"
-}
-
 variable "ecr_repo_url" {
-  description = "The URL of the ECR registry that hosts the github actions image"
+  description = "The URL of the ECR registry that hosts the GitHub Actions image"
   type        = string
   default     = "037370603820.dkr.ecr.us-east-1.amazonaws.com/github-actions-runner"
+}
+
+variable "ecr_repo_tag" {
+  description = "The tag to identify and pull the image in ECR repository"
+  type        = string
+  default     = "latest"
 }
 
 variable "ecr_repository_arns" {
@@ -17,8 +15,6 @@ variable "ecr_repository_arns" {
   type        = list(string)
   default     = ["arn:aws:ecr:us-east-1:037370603820:repository/github-actions-runner"]
 }
-
-# ECS variables
 
 variable "environment" {
   type        = string
@@ -41,21 +37,23 @@ variable "ecs_desired_count" {
   default     = 0
 }
 
+variable "cluster_name_prefix" {
+  description = "Prefix for the ECS cluster name to make it human readable"
+  type        = string
+  default     = "gh-runner"
+}
+
 variable "tags" {
   type        = map(any)
   description = "Additional tags to apply."
   default     = {}
 }
 
-# Cloudwatch Variables
-
 variable "cloudwatch_log_retention" {
   description = "Number of days to retain logs"
   type        = number
   default     = 731
 }
-
-# GitHub Runner Variables
 
 variable "personal_access_token_arn" {
   description = "AWS SecretsManager ARN for GitHub personal access token"

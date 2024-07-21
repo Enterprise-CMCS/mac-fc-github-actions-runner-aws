@@ -1,5 +1,5 @@
 resource "aws_cloudwatch_log_group" "main" {
-  name              = "/ecs/${var.environment}/gh-runner-${local.gh_name_hash}"
+  name              = "/ecs/${var.environment}/gh-runner-${local.cluster_name}"
   retention_in_days = var.cloudwatch_log_retention
 
   kms_key_id = aws_kms_key.log_enc_key.arn
@@ -11,7 +11,6 @@ resource "aws_cloudwatch_log_group" "main" {
     Environment = var.environment
     Automation  = "Terraform"
   }
-
 }
 
 resource "aws_kms_key" "log_enc_key" {

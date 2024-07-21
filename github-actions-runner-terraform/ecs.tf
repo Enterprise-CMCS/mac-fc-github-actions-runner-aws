@@ -1,5 +1,6 @@
 locals {
   gh_name_hash  = uuidv5("3505f3f5-f7e4-46df-a7b0-42f7472ebea5", "${var.environment}-${var.github_repo_owner}-${var.github_repo_name}")
+  cluster_name  = "${var.cluster_name_prefix}-${local.gh_name_hash}"
   awslogs_group = split(":", aws_cloudwatch_log_group.main.arn)[6]
 }
 
@@ -40,12 +41,12 @@ data "aws_iam_policy_document" "events_assume_role_policy" {
 # SG - ECS
 
 resource "aws_security_group" "ecs_sg" {
-  name        = "ecs-gh-runner-${local.gh_name_hash}"
-  description = "gh-runner-${local.gh_name_hash} container security group"
+  name        = "ecs-gh-runner-${local.cluster_name}"
+  description = "gh-runner-${local.cluster_name} container security group"
   vpc_id      = var.ecs_vpc_id
 
   tags = {
-    Name        = "ecs-gh-runner-${local.gh_name_hash}"
+    Name        = "ecs-gh-runner-${local.cluster_name}"
     GHOwner     = var.github_repo_owner
     GHRepo      = var.github_repo_name
     Environment = var.environment
@@ -75,7 +76,7 @@ resource "aws_security_group_rule" "allow_self" {
   self              = true
 }
 
-## ECS schedule task
+# ECS schedule task
 
 # Allows CloudWatch Rule to run ECS Task
 
@@ -92,7 +93,7 @@ data "aws_iam_policy_document" "cloudwatch_target_role_policy_doc" {
 }
 
 resource "aws_iam_role" "cloudwatch_target_role" {
-  name                 = "cw-target-role-${local.gh_name_hash}"
+  name                 = "cw-target-role-${local.cluster_name}"
   description          = "Role allowing CloudWatch Events to run the task"
   assume_role_policy   = data.aws_iam_policy_document.events_assume_role_policy.json
   path                 = var.role_path
@@ -106,7 +107,7 @@ resource "aws_iam_role_policy" "cloudwatch_target_role_policy" {
 }
 
 resource "aws_iam_role" "task_role" {
-  name                 = "ecs-task-role-${local.gh_name_hash}"
+  name                 = "ecs-task-role-${local.cluster_name}"
   description          = "Role allowing container definition to execute"
   assume_role_policy   = data.aws_iam_policy_document.ecs_assume_role_policy.json
   path                 = var.role_path
@@ -172,8 +173,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
 # ECS task details
 
 resource "aws_ecs_cluster" "github-runner" {
-
-  name = "gh-runner-${local.gh_name_hash}"
+  name = local.cluster_name
 
   tags = {
     Name        = "github-runner"
@@ -189,11 +189,11 @@ resource "aws_ecs_cluster" "github-runner" {
 }
 
 resource "aws_ecs_task_definition" "runner_def" {
-  family        = "gh-runner-${local.gh_name_hash}"
+  family        = "gh-runner-${local.cluster_name}"
   network_mode  = "awsvpc"
   task_role_arn = aws_iam_role.task_role.arn
 
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["EC2"]
   cpu                      = var.task_cpu
   memory                   = var.task_memory
   execution_role_arn       = aws_iam_role.task_role.arn
@@ -225,15 +225,14 @@ resource "aws_ecs_task_definition" "runner_def" {
 }
 
 resource "aws_ecs_service" "actions-runner" {
-  name            = "gh-runner-${local.gh_name_hash}"
+  name            = "gh-runner-${local.cluster_name}"
   cluster         = aws_ecs_cluster.github-runner.arn
   task_definition = aws_ecs_task_definition.runner_def.arn
   desired_count   = var.ecs_desired_count
-  launch_type     = "FARGATE"
+  launch_type     = "EC2"
   network_configuration {
-    subnets          = [for s in var.ecs_subnet_ids : s]
+    subnets          = var.ecs_subnet_ids
     security_groups  = [aws_security_group.ecs_sg.id]
-    assign_public_ip = var.assign_public_ip
   }
 
   tags = {
