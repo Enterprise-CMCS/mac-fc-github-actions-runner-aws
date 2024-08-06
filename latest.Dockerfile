@@ -1,4 +1,4 @@
-FROM alpine:3.19.0 as install
+FROM alpine:3.19.0 AS install
 
 RUN apk add --update --no-cache \
     curl \
@@ -22,6 +22,13 @@ RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
 
 COPY --from=install /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=install ./runner /home/runner
+
+# install libicu for Ubuntu 24.04
+# https://github.com/actions/runner/issues/3150
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libicu-dev \
+    && rm -rf /var/lib/apt/lists
 
 # install runner dependencies
 RUN /home/runner/bin/installdependencies.sh
