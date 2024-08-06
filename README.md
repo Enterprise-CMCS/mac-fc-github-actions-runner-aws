@@ -2,13 +2,13 @@
 
 ## About
 
-This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module which can be run in your environment to provision:
+This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module, `github-actions-runner-terraform`, which can be run in your environment to provision:
 
 - ECS Cluster
 - ECS Service
 - ECS Fargate task definition to spin up an instance of this runner _per job_ in your GitHub Actions workflow
 
-This module uses an existing ECR repository in AWS, and so does not provision one.
+This module uses the ECR repository created in the MACBIS Shared DSO Dev account, managed in the `terraform/dev/account` directory, and accessible by the MACBIS organization.
 
 ## Runner Dockerfiles
 
@@ -23,15 +23,11 @@ export $(cat docker.env) && docker build -f latest.Dockerfile --build-arg ACTION
 
 ## Set Up
 
-See [Confluence](https://confluenceent.cms.gov/display/MDSO/Guide+to+Github+Actions+Self-Hosted+Runners) for the most up-to-date setup steps
+See [Confluence](https://confluenceent.cms.gov/x/zR9AD) for setup steps.
 
 ### IAM Permissions
 
-There is a sub-directory containing a separate module that configures the resources necessary to use GitHub's OIDC provider to retrieve short-term credentials from AWS. See [the module's README](github-oidc/README.md) for more information.
-
-#### NOTE: Including a path to IAM roles
-
-Should you decide to populate the optional `path` variable in this module, ensure that the Resource the iam:GetRole and PassRole are enabled on includes the path you specify. e.g. `"arn:aws:iam::$AWS_ACCOUNT_ID:role/path/you/specified/ecs-task-role-*"`
+The `github-oidc` module that configures the IAM resources necessary to use GitHub's OIDC provider to retrieve short-term credentials from AWS is DEPRECATED. Use the official AWS OIDC role and identity provider modules. See [the confluence page for setting up a self-hosted runner](https://confluenceent.cms.gov/x/-Nj_Fw) for more information.
 
 ## Local Github Token Testing
 
@@ -54,18 +50,21 @@ The `entrypoint.sh` script is what sets up the docker image to act as a runner, 
 
 ## Terraform Module
 
-This repository contains a Terraform module to deploy an ECS cluster, ECS service, and log to Cloudwatch in support of automating the deployment of ephemeral self-hosted Github Actions runners within AWS.
+This repository contains a Terraform module `github-actions-runner-terraform` to deploy an ECS cluster, ECS service, and log to Cloudwatch in support of automating the deployment of ephemeral self-hosted Github Actions runners within AWS.
 
 This module supports the following features:
 
 - Optionally pass an existing ECS Cluster, and if not, create one
 - Set default desired count for ECS Service (default is 0, assuming it will be managed by Github Actions workflow)
+- If you don't want the workflow to start and stop the ECS service then set the desired count to `1` so that the ECS service is always running.
 
 ### Usage
 
+See the instructions on the confluence page [Setting up a Self-Hosted GitHub Actions Runner](https://confluenceent.cms.gov/x/-Nj_Fw).
+
 ```hcl
 module "github-actions-runner-aws" {
-  source = "github.com/cmsgov/github-actions-runner-aws?ref=v2.0.0"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//github-actions-runner-terraform?ref=v5.0.0"
 
   # ECS variables
   environment               = "${environment}"
@@ -73,9 +72,29 @@ module "github-actions-runner-aws" {
   ecs_subnet_ids            = "${vpc.private_subnets.id}"
 
   # GitHub Runner variables
-  personal_access_token_arn = "${secretsmanager.token.arn}"
+  personal_access_token_arn = "aws_secretsmanager_secret_version.this.arn"
   github_repo_name          = "${repo_name}"
-  ecr_repo_tag              = # "latest"/"playwright"
+  github_repo_owner         = "${repo_owner}"
+
+  # IAM variables
+  role_path = "/delegatedadmin/developer/"
+  permissions_boundary = "arn:aws:iam::{your AWS account ID}:policy/cms-cloud-admin/developer-boundary-policy"
+}
+
+resource "aws_secretsmanager_secret" "this" {
+  description = "Secret to store github access token"
+  name        = "/github-runner-token"
+}
+
+resource "aws_secretsmanager_secret_version" "this" {
+  secret_id     = aws_secretsmanager_secret.this.id
+  secret_string = "placeholder"
+
+  lifecycle {
+    ignore_changes = [
+      secret_string
+    ]
+  }
 }
 ```
 

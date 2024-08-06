@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
@@ -56,7 +56,7 @@ jobs:
 
   test-self-hosted:
     name: Testing self-hosted tag
-    needs: start-runner
+    needs: start-runners
     runs-on: self-hosted
     steps:
       - name: step 1
@@ -64,7 +64,7 @@ jobs:
 
   test-internal-tools:
     name: Testing internal tool connectivity
-    needs: start-runner
+    needs: start-runners
     runs-on: self-hosted
     steps:
       - name: curl selenium
@@ -79,7 +79,7 @@ jobs:
     needs: [start-runners, test-self-hosted, test-internal-tools]
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
@@ -121,7 +121,7 @@ You should be sure to install any other prerequisites onto the self-hosted runne
 
 ```yaml
 - name: Set up Node
-  uses: actions/setup-node@v3
+  uses: actions/setup-node@v4
   with:
-    node-version: 16
+    node-version: 20
 ```

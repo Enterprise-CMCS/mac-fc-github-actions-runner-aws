@@ -1,7 +1,12 @@
 data "aws_organizations_organization" "cmsgov" {}
 
 resource "aws_ecr_repository" "github_actions_runner" {
-  name = "github-actions-runner"
+  name                 = "github-actions-runner"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 
   tags = {
     Automation = "Terraform"

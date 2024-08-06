@@ -1,11 +1,17 @@
-# github-oidc
+# github-oidc module
+
+This module is DEPRECATED.
+
+Use the official AWS OIDC role and identity provider modules. See [the confluence page for setting up a self-hosted runner](https://confluenceent.cms.gov/x/-Nj_Fw) for more information.
+
+The rest of this README is useful for understanding how AWS trusts the GitHub Action Open ID Connect Identity (OIDC) Provider (IdP).
 
 This folder contains two methods for using infrastructure-as-code (IaC) to create the resources necessary to use GitHub's OIDC provider to retrieve short-term credentials for performing AWS actions in a GitHub Actions workflow.
 
-- [Terraform](./terraform/)
+- [Terraform](./terraform/) <=========================> DEPRECATED
 - [Cloudformation](./cloudformation)
 
-The advantage of this approach is that there is no need to create an IAM user and store long-term AWS credentials in GitHub secrets.
+The advantage of using the GitHub OIDC with the AWS identity provider resource is that there is no need to create an IAM user and store long-term AWS credentials in GitHub secrets.
 
 - [Read more about using GitHub OIDC](https://docs.github.com/en/enterprise-server@3.5/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
 - [Read more about configuring OpenID Connect in AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
@@ -16,7 +22,9 @@ Note: In order to successfully create IAM resources in CMS Cloud, developers mus
 
 ### IAM OIDC Identity Provider
 
-IAM OIDC identity providers are entities in IAM that describe an external identity provider (IdP) service that supports the [OpenID Connect (OIDC) standard](http://openid.net/connect/). The AWS IdP is configured with the URL (`token.actions.githubusercontent.com`) and server certificate thumbprint of the GitHub OIDC provider. A valid default value for the thumbprint is provided, but thumbprint can also be obtained by following [these steps](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html).
+An IAM OIDC identity provider is a resource in IAM that describes an external identity provider (IdP) service that supports the [OpenID Connect (OIDC) standard](http://openid.net/connect/). The AWS identity provider resource is configured with the URL (`token.actions.githubusercontent.com`) and server certificate thumbprint of the GitHub OIDC provider. A valid default value for the thumbprint is provided, but thumbprint can also be obtained by following [these steps](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html).
+
+NOTE: AWS secures communication with the GitHub IdP through its library of trusted root certificate authorities (CAs) instead of using a certificate thumbprint to verify GitHub's IdP server certificate. The thumbprint remains in the AWS identity provider configuration, but is no longer used for validation. source: [AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html)
 
 ## IAM Role
 
@@ -24,7 +32,7 @@ This is the role that the Actions workflow assumes via the OIDC request. The per
 
 ### IAM Trust Policy
 
-This policy establishes the trust relationship between GitHub and AWS based on values in the JSON web token (JWT) submitted by the GitHub OIDC provider. Here's an example of the JWT sent by GitHub to AWS:
+This policy establishes the trust relationship between GitHub OIDC IdP and the AWS OIDC identity provider resource based on values in the JSON web token (JWT) submitted by the GitHub OIDC IdP. Here's an example of the JWT sent by GitHub to AWS:
 
 ```json
 {
@@ -96,4 +104,4 @@ jobs:
      ...
 ```
 
-We recommend that you store the ARN of the role created by this module as a GitHub secret called `${environment}_OIDC_IAM_ROLE_ARN`, to make it easy to refer to the ARN in workflow runs.
+We recommend that you store the ARN of the role created by this module as a GitHub [Environment secret](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#environment-secrets) called `OIDC_IAM_ROLE_ARN` in each to make it easy to refer to the ARN in workflow runs.
