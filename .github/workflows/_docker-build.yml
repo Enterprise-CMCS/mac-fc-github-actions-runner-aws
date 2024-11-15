@@ -87,8 +87,9 @@ jobs:
           provenance: false # the default behavior adds an 'image index' which clutters up ECR, see https://github.com/docker/buildx/issues/1533
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
+          github-pat: ${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }}
           image-ref: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
           format: "table"
           exit-code: "1"
