@@ -86,10 +86,16 @@ jobs:
           load: true # this loads the image to the current docker instance so it can be referenced by tag in the subsequent steps: https://docs.docker.com/engine/reference/commandline/buildx_build/#docker
           provenance: false # the default behavior adds an 'image index' which clutters up ECR, see https://github.com/docker/buildx/issues/1533
 
+      - name: Install Trivy vulnerability scanner
+        uses: aquasecurity/setup-trivy@v0.2.2
+        with:
+          cache: true
+          token: ${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }}
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          github-pat: ${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }}
+          skip-setup-trivy: true
           image-ref: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
           format: "table"
           exit-code: "1"
