@@ -21,6 +21,7 @@ jobs:
       ./.github/workflows/_docker-build.yml
     with:
       dockerfile: playwright.Dockerfile
+      trivyignore: .trivyignore-playwright
       feature-branch-image-tag: playwright-v1.38.0
       default-branch-image-tag: playwright-v1.38.0
     secrets: inherit

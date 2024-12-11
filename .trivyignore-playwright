@@ -1,0 +1,12 @@
+# accept the risk of the Microsoft Playwright image
+
+CVE-2023-44487
+CVE-2023-5217
+
+# accept the risk of the internal Node.JS libraries used by the runner.
+
+CVE-2024-21538
+
+# accept the risk of internal dotnet-core dependencies for the runner
+
+CVE-2024-38095

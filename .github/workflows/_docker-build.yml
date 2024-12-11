@@ -7,6 +7,10 @@ on:
         description: "Path to the Dockerfile to build"
         type: string
         default: "latest.Dockerfile"
+      trivyignore:
+        description: "Path to trivyignore file"
+        type: string
+        default: ".trivyignore-latest"
       feature-branch-image-tag:
         description: "Tag to apply to the Docker image when workflow runs on a feature branch"
         type: string
@@ -87,7 +91,10 @@ jobs:
           provenance: false # the default behavior adds an 'image index' which clutters up ECR, see https://github.com/docker/buildx/issues/1533
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
+        env:
+          # avoid GHCR rate limits, see https://github.com/aquasecurity/trivy-db/pull/440 and https://github.com/aquasecurity/trivy-action/issues/389
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
         with:
           image-ref: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
           format: "table"
@@ -95,6 +102,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+          trivyignores: ${{ inputs.trivyignore }}
 
       - name: Run Dockle image linter
         uses: hands-lab/dockle-action@v1
