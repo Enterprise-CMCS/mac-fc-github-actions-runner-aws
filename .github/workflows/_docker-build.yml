@@ -7,6 +7,10 @@ on:
         description: "Path to the Dockerfile to build"
         type: string
         default: "latest.Dockerfile"
+      trivyignore:
+        description: "Path to trivyignore file"
+        type: string
+        default: ".trivyignore-latest"
       feature-branch-image-tag:
         description: "Tag to apply to the Docker image when workflow runs on a feature branch"
         type: string
@@ -98,6 +102,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+          trivyignores: ${{ inputs.trivyignore }}
 
       - name: Run Dockle image linter
         uses: hands-lab/dockle-action@v1
