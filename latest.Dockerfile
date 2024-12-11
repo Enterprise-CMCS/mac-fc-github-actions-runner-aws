@@ -14,7 +14,7 @@ RUN \
     && mkdir runner \
     && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
-FROM ubuntu:24.04
+FROM ubuntu:25.04
 
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
@@ -23,7 +23,7 @@ RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
 COPY --from=install /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=install ./runner /home/runner
 
-# install libicu for Ubuntu 24.04
+# install libicu for Ubuntu 25.04
 # https://github.com/actions/runner/issues/3150
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
