@@ -11,4 +11,4 @@ jobs:
         with:
           terraform_version: "~>1.5.2" # match the version constraint in versions.tf
       - uses: actions/setup-python@v5.2.0
-      - uses: pre-commit/action@v3.0.0
+      - uses: pre-commit/action@v3.0.1
