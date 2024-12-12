@@ -42,6 +42,10 @@ RUN apt-get update \
     unzip \
     && rm -rf /var/lib/apt/lists
 
+# Remove setuid and setgid permissions after all package installations to address
+# https://github.com/goodwithtech/dockle/blob/master/CHECKPOINT.md#cis-di-0008
+RUN find / -path /proc -prune -o -perm /6000 -type f -exec chmod a-s {} + || true
+
 WORKDIR /home/runner
 USER runner
 
