@@ -11,7 +11,7 @@ status_code=$(curl \
     -o /tmp/token_response.json \
     -X POST \
     -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" \
-    "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runners/registration-token" \
+    "https://api.github.com/orgs/Enterprise-CMCS/runners/registration-token" \
     )
 
 if [[ $status_code == "201" ]]
@@ -38,7 +38,7 @@ LABELS=$(echo "$UNIQUE_ID" "$RUNNER_LABELS" | tr ' ' ',' )
 
 ./config.sh \
       --unattended \
-      --url "https://github.com/${REPO_OWNER}/${REPO_NAME}" \
+      --url "https://github.com/Enterprise-CMCS"  \
       --token "${REGISTRATION_TOKEN}" \
       --name "${UNIQUE_ID}" \
       --labels "${LABELS}" \
