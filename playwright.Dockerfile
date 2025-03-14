@@ -1,4 +1,4 @@
-FROM alpine:3.21.0 as install
+FROM alpine:3.21.3 as install
 
 RUN apk add --update --no-cache \
     curl \
@@ -34,6 +34,12 @@ RUN apt-get update \
     uuid-runtime \
     unzip \
     && rm -rf /var/lib/apt/lists
+
+# install awscli because the standard runner has it
+# per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
 
 WORKDIR /home/runner
 USER runner

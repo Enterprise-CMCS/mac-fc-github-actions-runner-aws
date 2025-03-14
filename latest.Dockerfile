@@ -1,4 +1,4 @@
-FROM alpine:3.21.0 AS install
+FROM alpine:3.21.3 AS install
 
 RUN apk add --update --no-cache \
     curl \
@@ -41,6 +41,16 @@ RUN apt-get update \
     uuid-runtime \
     unzip \
     && rm -rf /var/lib/apt/lists
+
+# install awscli because the standard runner has it
+# per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
+
+# Remove setuid and setgid permissions after all package installations to address
+# https://github.com/goodwithtech/dockle/blob/master/CHECKPOINT.md#cis-di-0008
+RUN find / -path /proc -prune -o -perm /6000 -type f -exec chmod a-s {} + || true
 
 WORKDIR /home/runner
 USER runner
