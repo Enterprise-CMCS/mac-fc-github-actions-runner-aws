@@ -51,5 +51,3 @@ The permissions policy is defined by two optional parameters:
    ```console
    aws cloudformation describe-stacks --stack-name github-oidc --query "Stacks[0].Outputs[?OutputKey=='ServiceRoleARN'].OutputValue" --output text
    ```
-
-3. For each environment, create a repository secret in `GitHub Secrets -> Actions` where the key is `${environment}_OIDC_IAM_ROLE_ARN` and the value is the ARN of the role for that environment. Refer to this secret when configuring credentials for a given environment in a workflow.
