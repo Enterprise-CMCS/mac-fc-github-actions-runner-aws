@@ -1,0 +1,23 @@
+name: tmate
+on:
+  push:
+    branches:
+      - bharvey-iam-role
+
+jobs:
+  debug:
+    name: Debug
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Set up secret file
+      env:
+        OIDC_IAM_ROLE_ARN: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+      run: |
+        echo $OIDC_IAM_ROLE_ARN >> secrets.txt
+
+    - name: Run tmate
+      uses: mxschmitt/action-tmate@v2
