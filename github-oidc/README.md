@@ -103,5 +103,3 @@ jobs:
           role-to-assume: ${ARN of the role created by this module}
      ...
 ```
-
-We recommend that you store the ARN of the role created by this module as a GitHub [Environment secret](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#environment-secrets) called `OIDC_IAM_ROLE_ARN` in each to make it easy to refer to the ARN in workflow runs.

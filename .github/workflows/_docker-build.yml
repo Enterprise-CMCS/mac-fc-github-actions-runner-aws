@@ -49,7 +49,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::037370603820:role/delegatedadmin/developer/github-actions-oidc
 
       - name: Log in to ECR
         id: login-ecr
@@ -124,7 +124,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::037370603820:role/delegatedadmin/developer/github-actions-oidc
 
       - name: Log in to ECR
         id: login-ecr
@@ -192,7 +192,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::037370603820:role/delegatedadmin/developer/github-actions-oidc
 
       - name: Add default branch tag to image
         uses: abronin/ecr-retag-action@v1

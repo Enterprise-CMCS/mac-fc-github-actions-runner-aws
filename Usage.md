@@ -11,7 +11,7 @@ As a part of your GitHub actions workflows, you may need access to internal CMS 
 This procedure assumes that you have already taken the steps documented in the main README. You have:
 
 - Instantiated the requisite infrastructure in AWS ECR and ECS
-- Instantiated the resources for the GitHub OIDC provider and stored the OIDC role ARN in a GitHub secret called `OIDC_IAM_ROLE_ARN`
+- Instantiated the resources for the GitHub OIDC provider and noted the OIDC role ARN
 
 ## Usage
 
@@ -45,7 +45,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::123456789012:role/delegatedadmin/developer/github-actions-oidc
 
       - name: Scale up ECS service
         uses: Enterprise-CMCS/ecs-scale-service@main
@@ -82,7 +82,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
-          role-to-assume: ${{ secrets.OIDC_IAM_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::123456789012:role/delegatedadmin/developer/github-actions-oidc
 
       - name: Scale down ECS service
         uses: Enterprise-CMCS/ecs-scale-service@main
