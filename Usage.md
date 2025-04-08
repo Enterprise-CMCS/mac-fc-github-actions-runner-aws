@@ -11,6 +11,7 @@ As a part of your GitHub actions workflows, you may need access to internal CMS 
 This procedure assumes that you have already taken the steps documented in the main README. You have:
 
 - Instantiated the requisite infrastructure in AWS ECR and ECS
+- Instantiated the resources for the GitHub OIDC provider and noted the OIDC role ARN
 
 ## Usage
 
