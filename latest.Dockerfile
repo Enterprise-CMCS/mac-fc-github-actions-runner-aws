@@ -42,6 +42,12 @@ RUN apt-get update \
     unzip \
     && rm -rf /var/lib/apt/lists
 
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
+
+
 # install awscli because the standard runner has it
 # per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
