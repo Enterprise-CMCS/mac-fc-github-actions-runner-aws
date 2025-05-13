@@ -14,7 +14,7 @@ on:
       feature-branch-image-tag:
         description: "Tag to apply to the Docker image when workflow runs on a feature branch"
         type: string
-        default: ""
+        default: "mvn"
       default-branch-image-tag:
         description: "Tag to apply to the Docker image when workflow runs on the default branch"
         type: string
