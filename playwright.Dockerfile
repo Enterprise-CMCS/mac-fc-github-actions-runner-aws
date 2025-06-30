@@ -33,7 +33,6 @@ RUN apt-get update \
     jq \
     uuid-runtime \
     unzip \
-    && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists
 
 # install awscli because the standard runner has it

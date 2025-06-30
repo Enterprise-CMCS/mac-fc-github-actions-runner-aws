@@ -28,7 +28,6 @@ COPY --from=install ./runner /home/runner
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libicu-dev \
-    && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
 # install runner dependencies
