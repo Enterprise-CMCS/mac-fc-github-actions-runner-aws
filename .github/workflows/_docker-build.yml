@@ -19,6 +19,10 @@ on:
         description: "Tag to apply to the Docker image when workflow runs on the default branch"
         type: string
         default: "latest"
+      trivy-severity:
+        description: "Severity levels for Trivy scanner"
+        type: string
+        default: "CRITICAL,HIGH,MEDIUM"
 
 permissions:
   id-token: write
@@ -101,7 +105,7 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
-          severity: "CRITICAL,HIGH,MEDIUM"
+          severity: ${{ inputs.trivy-severity }}
           trivyignores: ${{ inputs.trivyignore }}
 
       - name: Run Dockle image linter

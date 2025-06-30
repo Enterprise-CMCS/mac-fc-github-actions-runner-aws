@@ -24,4 +24,5 @@ jobs:
       trivyignore: .trivyignore-playwright
       feature-branch-image-tag: playwright-v1.38.0
       default-branch-image-tag: playwright-v1.38.0
+      trivy-severity: "CRITICAL,HIGH"
     secrets: inherit
