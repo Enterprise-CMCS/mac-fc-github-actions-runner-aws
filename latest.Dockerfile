@@ -23,6 +23,13 @@ RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
 COPY --from=install /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=install ./runner /home/runner
 
+# Install libicu for GitHub Actions runner compatibility and apply security updates
+# https://github.com/actions/runner/issues/3150
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libicu-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # install runner dependencies
 RUN /home/runner/bin/installdependencies.sh
 
