@@ -2,6 +2,7 @@
   {
     "name": "gh-runner-${gh_name_hash}",
     "image": "${ecr_repo_url}:${ecr_repo_tag}",
+    "versionConsistency": "disabled",
     "cpu": ${container_cpu},
     "memory": ${container_memory},
     "essential": true,
