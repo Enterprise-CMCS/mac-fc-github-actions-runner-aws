@@ -1,0 +1,71 @@
+{
+  "name": "mac-fc-github-actions-runner-aws",
+  "description": "This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module.",
+  "longDescription": "This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module, which provisions an ECS cluster, service and task definition.",
+  "status": "Production",
+  "permissions": {
+    "licenses": [
+      {
+        "name": "None",
+        "URL": "none"
+      }
+    ],
+    "usageType": "governmentWideReuse",
+    "exemptionText": ""
+  },
+  "organization": "Centers for Medicare & Medicaid Services",
+  "repositoryURL": "https://github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws",
+  "projectURL": "",
+  "repositoryHost": "github.com/CMS-Enterprise",
+  "repositoryVisibility": "public",
+  "vcs": "git",
+  "laborHours": 11521,
+  "reuseFrequency": {
+    "forks": 790
+  },
+  "platforms": [
+    "linux"
+  ],
+  "categories": [
+    "it-development",
+    "it-security"
+  ],
+  "softwareType": "standalone/backend",
+  "languages": [],
+  "maintenance": "contract",
+  "contractNumber": "47QTCA21D00AC",
+  "date": {
+    "created": "2023-03-23T16:40:53Z",
+    "lastModified": "2025-05-29T18:09:46Z",
+    "metaDataLastUpdated": "2025-06-01T00:18:04.619Z"
+  },
+  "tags": [
+    "self-hosted-runner",
+    "github-actions-runner",
+    "playwright-runner"
+  ],
+  "contact": {
+    "email": "cms-macfc@corbalt.com",
+    "name": "Corbalt"
+  },
+  "feedbackMechanisms": [
+    "https://github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws/issues"
+  ],
+  "localisation": false,
+  "repositoryType": "tools",
+  "userInput": false,
+  "fismaLevel": "Moderate",
+  "group": "CMCS/DSG",
+  "projects": [
+    "MACBIS GitHub Actions Runner"
+  ],
+  "systems": [],
+  "upstream": [],
+  "subsetInHealthcare": [
+    "Medicaid"
+  ],
+  "userType": [
+    "Government"
+  ],
+  "maturityModelTier": 2
+}

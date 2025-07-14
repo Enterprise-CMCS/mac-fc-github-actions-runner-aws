@@ -1,0 +1,26 @@
+name: Generate code.json
+on:
+  schedule:
+   - cron: "0 0 1 * *" # monthly
+
+jobs:
+  update-code-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate token from GitHub App
+        id: create_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ secrets.PR_PERMS_APP_ID }}
+          private_key: ${{ secrets.PR_PERMS_APP_SECRET }}
+
+      - name: Update code.json
+        uses: DSACMS/automated-codejson-generator@v1.0.0
+        with:
+          GITHUB_TOKEN: ${{ steps.create_token.outputs.token }}
+          BRANCH: "main"
