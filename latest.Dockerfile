@@ -34,8 +34,9 @@ RUN apt-get update && \
 RUN /home/runner/bin/installdependencies.sh
 
 # install entrypoint.sh dependencies (separately since these change more often)
-RUN apt-get update \
-    && apt-get -qq -y install --no-install-recommends \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get -qq -y install --no-install-recommends \
     curl \
     jq \
     uuid-runtime \
