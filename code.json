@@ -1,6 +1,6 @@
 {
   "name": "mac-fc-github-actions-runner-aws",
-  "description": "This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module.",
+  "description": "This repository will house infrastructure related to standing up an internally hosted GitHub Actions Runner within an AWS environment",
   "longDescription": "This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module, which provisions an ECS cluster, service and task definition.",
   "status": "Production",
   "permissions": {
@@ -19,7 +19,7 @@
   "repositoryHost": "github.com/CMS-Enterprise",
   "repositoryVisibility": "public",
   "vcs": "git",
-  "laborHours": 11521,
+  "laborHours": 3180,
   "reuseFrequency": {
     "forks": 790
   },
@@ -31,13 +31,18 @@
     "it-security"
   ],
   "softwareType": "standalone/backend",
-  "languages": [],
+  "languages": [
+    "HCL",
+    "Dockerfile",
+    "Shell",
+    "Smarty"
+  ],
   "maintenance": "contract",
   "contractNumber": "47QTCA21D00AC",
   "date": {
-    "created": "2023-03-23T16:40:53Z",
-    "lastModified": "2025-05-29T18:09:46Z",
-    "metaDataLastUpdated": "2025-06-01T00:18:04.619Z"
+    "created": "2021-06-11T18:35:45Z",
+    "lastModified": "2025-07-18T16:15:08Z",
+    "metaDataLastUpdated": "2025-08-01T00:39:24.464Z"
   },
   "tags": [
     "self-hosted-runner",

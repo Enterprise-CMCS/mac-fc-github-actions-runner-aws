@@ -22,7 +22,7 @@ on:
       trivy-severity:
         description: "Severity levels for Trivy scanner"
         type: string
-        default: "CRITICAL,HIGH,MEDIUM"
+        default: "CRITICAL,HIGH,MEDIUM,LOW"
 
 permissions:
   id-token: write
