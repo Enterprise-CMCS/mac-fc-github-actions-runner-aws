@@ -3,6 +3,11 @@ on:
   schedule:
    - cron: "0 0 1 * *" # monthly
 
+permissions:
+  contents: write      # Required for code.json generation and PR creation
+  pull-requests: write # Required to create a PR
+  issues: write        # Required to apply labels to the PR
+
 jobs:
   update-code-json:
     runs-on: ubuntu-latest
@@ -12,15 +17,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate token from GitHub App
-        id: create_token
-        uses: tibdex/github-app-token@v2.1.0
-        with:
-          app_id: ${{ secrets.PR_PERMS_APP_ID }}
-          private_key: ${{ secrets.PR_PERMS_APP_SECRET }}
-
       - name: Update code.json
         uses: DSACMS/automated-codejson-generator@v1.0.0
         with:
-          GITHUB_TOKEN: ${{ steps.create_token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: "main"
