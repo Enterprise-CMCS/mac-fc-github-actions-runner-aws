@@ -4,6 +4,8 @@ on:
   push:
     branches-ignore:
       - "*-skip-build"
+  schedule:
+    - cron: "0 8 * * 1" # every Monday at 8am
 
 permissions:
   id-token: write

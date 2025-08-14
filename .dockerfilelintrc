@@ -1,3 +1,4 @@
 rules:
   # This is needed because Dockle checks for `rm -rf /var/lib/apt/lists` while dockerfilelint checks for `rm -rf /var/lib/apt/lists/*`. We are choosing Dockle.
   apt-get_missing_rm: off
+  apt-get-upgrade: off
