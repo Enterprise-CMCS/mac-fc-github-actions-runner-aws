@@ -27,6 +27,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 jobs:
   set-runner-uuid:
@@ -140,7 +141,7 @@ jobs:
           docker run --rm \
           -e REPO_OWNER=${{ github.repository_owner }} \
           -e REPO_NAME=$(basename ${{ github.repository }}) \
-          -e PERSONAL_ACCESS_TOKEN=${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }} \
+          -e PERSONAL_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }} \
           -e RUNNER_UUID=${{ needs.set-runner-uuid.outputs.runner-uuid }} \
           ${{ needs.build-and-test.outputs.image-tag-with-repo }}
 
@@ -156,7 +157,7 @@ jobs:
           until \
             status=$(curl -s \
               -H "Accept: application/vnd.github.v3+json" \
-              -u robot-mac-fc:${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }} \
+              -u robot-mac-fc:${{ secrets.GITHUB_TOKEN }} \
               -o $response_file \
               -w "%{http_code}" \
               --url https://api.github.com/repos/${{ github.repository }}/actions/runners
