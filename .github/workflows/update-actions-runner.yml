@@ -3,6 +3,13 @@ name: Get latest GitHub Actions Runner
 on:
   schedule:
     - cron: "40 18 * * *"
+  push:
+    branches:
+      - lbk/use-github-token
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   update-runner:
@@ -33,7 +40,7 @@ jobs:
         if: ${{ steps.compare-versions.outputs.comparison-result == '>' }}
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update actions runner to new version
           author: robot-mac-fc <robot-mac-fc@users.noreply.github.com>
           branch: update-actions-runner-to-${{ steps.get-versions.outputs.release-tag }}
