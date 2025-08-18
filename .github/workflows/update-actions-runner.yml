@@ -37,7 +37,7 @@ jobs:
         run: sed -i 's|'"${{ steps.get-versions.outputs.current-tag }}"'|'"${{ steps.get-versions.outputs.release-tag }}"'|g' docker.env
 
       - name: Create Pull Request
-        if: ${{ steps.compare-versions.outputs.comparison-result == '>' }}
+        # if: ${{ steps.compare-versions.outputs.comparison-result == '>' }}
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
