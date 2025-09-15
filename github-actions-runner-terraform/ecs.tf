@@ -154,7 +154,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
       "secretsmanager:GetSecretValue",
     ]
     resources = [
-      "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:/github-runner*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:secret:/github-runner*",
     ]
   }
 
@@ -164,7 +164,7 @@ data "aws_iam_policy_document" "task_role_policy_doc" {
     ]
 
     resources = [
-      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/github-runner*"
+      "arn:${data.aws_partition.current.partition}:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/github-runner*"
     ]
   }
 }
@@ -206,7 +206,7 @@ resource "aws_ecs_task_definition" "runner_def" {
       ecr_repo_url              = var.ecr_repo_url,
       ecr_repo_tag              = var.ecr_repo_tag,
       awslogs_group             = local.awslogs_group,
-      awslogs_region            = data.aws_region.current.name,
+      awslogs_region            = data.aws_region.current.region,
       personal_access_token_arn = var.personal_access_token_arn,
       github_repo_owner         = var.github_repo_owner,
       github_repo_name          = var.github_repo_name,
