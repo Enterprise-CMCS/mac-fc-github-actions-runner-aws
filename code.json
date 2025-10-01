@@ -19,7 +19,7 @@
   "repositoryHost": "github.com/CMS-Enterprise",
   "repositoryVisibility": "public",
   "vcs": "git",
-  "laborHours": 3180,
+  "laborHours": 3185,
   "reuseFrequency": {
     "forks": 790
   },
@@ -41,8 +41,8 @@
   "contractNumber": "47QTCA21D00AC",
   "date": {
     "created": "2021-06-11T18:35:45Z",
-    "lastModified": "2025-07-18T16:15:08Z",
-    "metaDataLastUpdated": "2025-08-01T00:39:24.464Z"
+    "lastModified": "2025-08-14T16:18:14Z",
+    "metaDataLastUpdated": "2025-10-01T00:34:43.287Z"
   },
   "tags": [
     "self-hosted-runner",
