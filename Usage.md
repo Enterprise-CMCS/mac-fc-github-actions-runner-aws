@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::123456789012:role/delegatedadmin/developer/github-actions-oidc
@@ -79,7 +79,7 @@ jobs:
     needs: [start-runners, test-self-hosted, test-internal-tools]
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::123456789012:role/delegatedadmin/developer/github-actions-oidc
