@@ -25,7 +25,7 @@ jobs:
     with:
       dockerfile: playwright.Dockerfile
       trivyignore: .trivyignore-playwright
-      feature-branch-image-tag: playwright-v1.38.0
-      default-branch-image-tag: playwright-v1.38.0
+      feature-branch-image-tag: playwright-v1.56.1
+      default-branch-image-tag: playwright-v1.56.1
       trivy-severity: "CRITICAL,HIGH"
     secrets: inherit
