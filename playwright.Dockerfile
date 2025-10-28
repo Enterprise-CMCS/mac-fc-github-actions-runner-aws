@@ -1,4 +1,4 @@
-FROM alpine:3.21.3 as install
+FROM alpine:3.21 AS install
 
 RUN apk add --update --no-cache \
     curl \
@@ -14,7 +14,7 @@ RUN \
     && mkdir runner \
     && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
-FROM mcr.microsoft.com/playwright:v1.38.0-focal
+FROM mcr.microsoft.com/playwright:v1.56.1-noble
 
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
