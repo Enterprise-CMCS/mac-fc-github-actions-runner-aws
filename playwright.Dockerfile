@@ -1,4 +1,4 @@
-FROM alpine:3.21 as install
+FROM alpine:3.21 AS install
 
 RUN apk add --update --no-cache \
     curl \
