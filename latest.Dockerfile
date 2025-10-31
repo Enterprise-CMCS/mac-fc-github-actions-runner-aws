@@ -41,6 +41,7 @@ RUN apt-get update && \
     jq \
     uuid-runtime \
     unzip \
+    git \
     && rm -rf /var/lib/apt/lists
 
 # install awscli because the standard runner has it
