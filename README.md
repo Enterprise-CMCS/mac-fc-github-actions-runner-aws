@@ -12,27 +12,114 @@
 - **AWS Native**: Direct IAM role integration, no credential management
 - **Secure**: Ephemeral runners with no persistent state
 
-### Quick Start
+### Quick Start (Production-Ready with GitHub App)
+
+**Recommended for production:** Use GitHub App authentication for enhanced security and better rate limits.
 
 ```hcl
 module "github_runner" {
   source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.0.0"
 
-  github_owner       = "your-org"
-  github_repository  = "your-repo"
-  github_secret_name = "github/actions/token"
-  project_name       = "my-project"
+  # GitHub App authentication (recommended for production)
+  auth_method            = "github_app"
+  github_connection_name = "my-github-runner-connection"
+
+  # Repository configuration
+  github_owner      = "your-org"
+  github_repository = "your-repo"
+  project_name      = "my-project"
 }
 ```
 
-### Documentation
+**Why GitHub App?**
+- **Secure**: 1-hour token lifetime (vs 7-90 days for PAT)
+- **No user dependency**: Persists when employees leave
+- **Better rate limits**: 12,500-15,000 vs 5,000 requests/hour
 
-See the [codebuild/ module README](./codebuild/README.md) for complete documentation, including:
+After `terraform apply`, authorize the connection in AWS Console (one-time step).
 
-- GitHub App authentication (recommended)
-- VPC configuration
-- Troubleshooting
-- Examples
+### Alternative: Personal Access Token (Development/Testing)
+
+```hcl
+module "github_runner" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.0.0"
+
+  # PAT authentication (simpler for testing)
+  auth_method        = "pat"
+  github_secret_name = "github/actions/token"
+
+  github_owner      = "your-org"
+  github_repository = "your-repo"
+  project_name      = "my-project"
+}
+```
+
+---
+
+## Setup Guide
+
+### Prerequisites
+
+1. **Repository must be private** (security requirement)
+2. **GitHub App access** - Create ticket to CMS to add your private repo to the GitHub App
+
+### Deployment Steps
+
+**1. Get AWS credentials from Kion/Cloudtamer**
+
+**2. Create `main.tf`:**
+
+```hcl
+module "github_runner" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.0.0"
+
+  auth_method            = "github_app"
+  github_connection_name = "my-runner-connection"
+
+  github_owner      = "Enterprise-CMCS"
+  github_repository = "your-repo"
+  project_name      = "my-project"
+}
+```
+
+**3. Deploy:**
+
+```bash
+terraform init
+terraform apply
+```
+
+**4. Authorize connection:**
+- Open AWS Console link from terraform output
+- Click "Update pending connection"
+- Authorize with GitHub
+
+**5. Use in workflows:**
+
+```yaml
+jobs:
+  build:
+    runs-on: codebuild-my-project-dev-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Running on CodeBuild!"
+```
+
+### Testing
+
+```bash
+# View logs
+aws logs tail /aws/codebuild/my-project-dev-runner --follow
+
+# Cleanup
+terraform destroy
+```
+
+---
+
+## Additional Documentation
+
+See [codebuild/README.md](./codebuild/README.md) for PAT authentication, VPC configuration, and troubleshooting.
 
 ---
 
