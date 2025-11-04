@@ -1,0 +1,28 @@
+# Copy this file to terraform.tfvars and update with your values
+# Using values from infrastructure/github-runner/terraform.tfvars
+
+aws_region = "us-east-1"
+
+# GitHub Configuration
+github_owner      = "Enterprise-CMCS"
+github_repository = "mac-fc-embedded"
+
+# Project name (will be used as prefix for resources)
+project_name = "test-runner"
+
+# Environment
+environment = "dev"
+
+# CodeBuild configuration
+compute_type           = "BUILD_GENERAL1_MEDIUM"
+concurrent_build_limit = 20
+
+# enable vpc
+enable_vpc = true
+
+# vpc configuration
+vpc_config = {
+  vpc_id             = string       # VPC ID where runners will be deployed
+  subnet_ids         = list(string) # Private subnet IDs for runner placement
+  security_group_ids = list(string) # Security group IDs for network access (optional)
+}
