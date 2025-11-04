@@ -17,7 +17,7 @@ A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBu
 
 ## 📊 Architecture
 
-```
+```text
 GitHub Repository
     ↓ (webhook on workflow_job event)
 AWS CodeBuild
@@ -45,6 +45,7 @@ Report Results to GitHub
 The following AWS permissions are required for the user/role running Terraform:
 
 #### Core Permissions
+
 ```json
 {
   "Version": "2012-10-17",
@@ -84,6 +85,7 @@ The following AWS permissions are required for the user/role running Terraform:
 ```
 
 #### VPC Permissions (when `enable_vpc = true`)
+
 ```json
 {
   "Version": "2012-10-17",
@@ -107,7 +109,8 @@ The following AWS permissions are required for the user/role running Terraform:
 
 ### GitHub Requirements
 
-**Option 1: GitHub App (Recommended for Production)**
+#### Option 1: GitHub App (Recommended for Production)
+
 - GitHub App created in your organization
 - AWS CodeConnections connection authorized
 - Required GitHub App permissions:
@@ -115,11 +118,12 @@ The following AWS permissions are required for the user/role running Terraform:
   - Repository: Contents (Read-only)
   - Organization: Self-hosted runners (Read & write)
 
-**Option 2: Personal Access Token (PAT)**
+#### Option 2: Personal Access Token (PAT)
+
 - PAT with the following scopes:
-  - `repo` - Full control of repositories
-  - `admin:repo_hook` - Webhook management
-  - `admin:org` - Organization administration (for organization repositories)
+- `repo` - Full control of repositories
+- `admin:repo_hook` - Webhook management
+- `admin:org` - Organization administration (for organization repositories)
 - Repository Access:
   - Admin access to the target repository
   - Organization owner permissions (for organization repositories)
@@ -163,7 +167,7 @@ Choose your authentication method below:
 3. Click **Create GitHub App**
 4. Install the app on your organization or specific repositories
 
-**Step 2: Deploy the Runner (Module Creates Connection)**
+#### Step 2: Deploy the Runner (Module Creates Connection)
 
 ```hcl
 module "github_runner" {
@@ -193,18 +197,20 @@ output "setup_instructions" {
 **Step 3: Authorize Connection** (One-time manual step)
 
 After `terraform apply`, the module output will show:
+
 1. Direct link to AWS Console
 2. Connection name and status
 3. Step-by-step authorization instructions
 
 Simply:
+
 1. Click the console link
 2. Find your connection (status: PENDING)
 3. Click "Update pending connection"
 4. Authorize with GitHub and select your GitHub App
 5. Done! Connection status → AVAILABLE
 
-**Alternative: Use Existing Connection**
+#### Alternative: Use Existing Connection
 
 If you already have an authorized CodeConnections connection:
 
@@ -228,15 +234,19 @@ module "github_runner" {
 ### Option B: Personal Access Token (PAT) Authentication
 
 ### Step 0: Get AWS credential from Kion/Cloudtamer
+
 Get temporary AWS credential from Kion/Cloudtamer and run in on your terminal
 
 ### Step 1: Generate GitHub Token
+
 Create new or update existing PAT with the following scopes:
-  - `repo` - Full control of repositories
-  - `admin:repo_hook` - Webhook management
-  - `admin:org` - Organization administration (for organization repositories)
+
+- `repo` - Full control of repositories
+- `admin:repo_hook` - Webhook management
+- `admin:org` - Organization administration (for organization repositories)
 
 ### Step 2: Create AWS Secret
+
 ```bash
 # Create secret with placeholder value first
 aws secretsmanager create-secret \
@@ -251,6 +261,7 @@ aws secretsmanager put-secret-value \
 
 
 ### Step 3: update terraform.tfvars
+
 cd test-module
 cp terraform.tfvars.example terraform.tfvars
 
@@ -271,7 +282,8 @@ Create a test github workflow file to test your self hosted runner. You can use 
 
 NOTE: Don't forget to update your runs-on: with the output lable i.e. codebuild-demo-runner-dev-runner-${github.run_id}-${github.run_attempt}
 
-```
+```yaml
+
 name: Test New CodeBuild Runner
 
 on:
@@ -428,11 +440,12 @@ jobs:
 | `auth_method` | Authentication method | `string` | `"pat"` | `"pat"` for Personal Access Token or `"github_app"` for GitHub App |
 | `github_connection_name` | Name for new CodeConnections connection | `string` | `""` | **Recommended**: Module creates connection for you |
 | `github_connection_arn` | Existing CodeConnections connection ARN | `string` | `""` | Use if you already have an authorized connection |
-| `github_secret_name` | AWS Secrets Manager secret name containing GitHub PAT as plaintext. Secret must exist before running terraform. Create with: aws secretsmanager create-secret --name <name> --secret-string 'ghp_token' | `string` | `""` | Required if `auth_method="pat"` |
+| `github_secret_name` | AWS Secrets Manager secret name containing GitHub PAT as plaintext. Secret must exist before running terraform. Create with: aws secretsmanager create-secret --name `<name>` --secret-string 'ghp_token' | `string` | `""` | Required if `auth_method="pat"` |
 | `github_token` | GitHub Personal Access Token (sensitive) | `string` | `""` | Only for development/testing with `auth_method="pat"` |
 | `skip_webhook_creation` | Skip webhook creation (useful if you need to populate secret before creating webhook) | `bool` | `false` | For two-phase deployments |
 
 > **GitHub App Authentication** (`auth_method="github_app"`):
+>
 > - **Option 1 (Recommended)**: Set `github_connection_name` - module creates connection, you authorize in console
 > - **Option 2**: Set `github_connection_arn` - use your existing authorized connection
 > - Most secure: 1-hour auto-refreshing tokens
@@ -440,6 +453,7 @@ jobs:
 > - See [Authentication Methods](#-authentication-methods) for setup
 >
 > **PAT Authentication** (`auth_method="pat"`, default):
+>
 > - Requires GitHub token with scopes: `repo`, `admin:repo_hook`, `admin:org`
 > - Store as plaintext in Secrets Manager (not JSON)
 > - Token valid for 7-90 days (manual rotation required)
@@ -486,6 +500,7 @@ vpc_config = {
 | `tags` | Additional tags to apply to all resources | `map(string)` | `{}` | Merged with default tags |
 
 > **Default Tags**: The module automatically applies these tags:
+>
 > - `Module: terraform-aws-codebuild-github-runner`
 > - `Environment: <environment>`
 > - `Project: <project_name>`
@@ -591,6 +606,7 @@ output "setup_instructions" {
 ## Examples
 
 ### Basic Setup with PAT
+
 ```hcl
 module "runner" {
   source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
@@ -603,6 +619,7 @@ module "runner" {
 ```
 
 ### With GitHub App (Production - Recommended)
+
 ```hcl
 module "runner" {
   source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
@@ -624,6 +641,7 @@ output "setup_instructions" {
 ```
 
 ### With VPC
+
 ```hcl
 module "runner" {
   source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
@@ -643,6 +661,7 @@ module "runner" {
 ```
 
 ### High Performance
+
 ```hcl
 module "runner" {
   source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
@@ -671,12 +690,15 @@ module "runner" {
 **Note**: As of v1.1.0, the module includes **automatic secret validation** that checks if the secret exists before creating any infrastructure. If the secret is missing, you'll see a clear error message with instructions before any resources are created.
 
 **Solutions**:
+
 - Create the secret before running `terraform apply`:
+
   ```bash
   aws secretsmanager create-secret \
     --name "github/actions/runner-token" \
     --secret-string "ghp_your_actual_token_here"
   ```
+
 - If you're creating the secret in Terraform, use targeted apply (see Step 3 in Quick Start)
 - If using a data source, ensure the secret exists first
 - Add explicit `depends_on` to the module if needed
@@ -687,12 +709,15 @@ module "runner" {
 **Cause**: The secret value is still a placeholder or empty
 
 **Solutions**:
+
 - Update the secret value with your actual GitHub token:
+
   ```bash
   aws secretsmanager put-secret-value \
     --secret-id "github/actions/runner-token" \
     --secret-string "ghp_your_actual_token_here"
   ```
+
 - Verify the token has the correct permissions (`repo`, `admin:repo_hook`, `admin:org`)
 - Re-run `terraform apply` after updating the secret
 
@@ -702,6 +727,7 @@ module "runner" {
 **Cause**: The module tries to read the secret before it's created
 
 **Solutions**:
+
 - Use the recommended two-step apply process (see Step 3 in Quick Start)
 - Add `depends_on = [aws_secretsmanager_secret.github_token]` to the module block
 - Use a data source instead of creating the secret in the same apply
@@ -725,6 +751,7 @@ aws secretsmanager put-secret-value \
 
 **Symptoms**: GitHub Actions jobs remain queued, never start
 **Diagnosis**:
+
 ```bash
 # Check webhook registration
 aws codebuild batch-get-projects --names <project-name> --query "projects[0].webhook"
@@ -734,6 +761,7 @@ aws codebuild list-builds-for-project --project-name <project-name>
 ```
 
 **Solutions**:
+
 - Verify GitHub token has correct scopes (`repo`, `admin:repo_hook`, `admin:org`)
 - For enterprise organizations, ensure SSO authorization is completed
 - Check that webhook event type is `WORKFLOW_JOB_QUEUED`
@@ -743,13 +771,16 @@ aws codebuild list-builds-for-project --project-name <project-name>
 
 **Symptoms**: Build fails during provisioning with VPC errors
 **Diagnosis**:
+
 ```bash
 # Check IAM role permissions
 aws iam get-role-policy --role-name <codebuild-role-name> --policy-name <vpc-policy-name>
 ```
 
 **Solutions**:
+
 - Ensure CodeBuild service role has these permissions:
+
   ```json
   {
     "Version": "2012-10-17",
@@ -771,6 +802,7 @@ aws iam get-role-policy --role-name <codebuild-role-name> --policy-name <vpc-pol
     }]
   }
   ```
+
 - Verify VPC is not shared VPC
 - Ensure sufficient IP addresses available in subnets
 - Confirm NAT gateway exists for internet access
@@ -779,11 +811,13 @@ aws iam get-role-policy --role-name <codebuild-role-name> --policy-name <vpc-pol
 
 **Symptoms**: `RequestError: JIT configuration provided by GitHub is invalid`
 **Causes**:
+
 - GitHub token lacks required permissions
 - Token not authorized for enterprise organization
 - Repository webhook misconfigured
 
 **Solutions**:
+
 - Re-create GitHub token with all required scopes
 - Complete SSO authorization for enterprise orgs
 - Verify webhook points to correct CodeBuild project
@@ -792,6 +826,7 @@ aws iam get-role-policy --role-name <codebuild-role-name> --policy-name <vpc-pol
 
 **Symptoms**: Builds timeout during execution
 **Solutions**:
+
 - Increase timeout in CodeBuild project settings
 - Check network connectivity (VPC/NAT gateway)
 - Verify Docker images are accessible
@@ -801,6 +836,7 @@ aws iam get-role-policy --role-name <codebuild-role-name> --policy-name <vpc-pol
 
 **Error**: `Module source has changed`
 **Solution**:
+
 ```bash
 terraform init -upgrade
 terraform plan
@@ -809,6 +845,7 @@ terraform apply
 
 **Error**: `InvalidClientTokenId: The security token included in the request is invalid`
 **Solution**:
+
 - Check AWS credentials are valid
 - Ensure correct AWS region is configured
 - Verify IAM permissions for Terraform user/role
@@ -816,6 +853,7 @@ terraform apply
 ### Debugging Commands
 
 #### Check Build Status
+
 ```bash
 # List recent builds
 aws codebuild list-builds-for-project --project-name <project-name>
@@ -828,6 +866,7 @@ aws logs tail /aws/codebuild/<project-name> --follow
 ```
 
 #### Validate Configuration
+
 ```bash
 # Check webhook status
 aws codebuild batch-get-projects --names <project-name> \
@@ -840,6 +879,7 @@ aws iam list-role-policies --role-name <role-name>
 ```
 
 #### Network Troubleshooting (VPC)
+
 ```bash
 # Check VPC configuration
 aws ec2 describe-vpcs --vpc-ids <vpc-id>
@@ -858,6 +898,7 @@ aws ec2 describe-nat-gateways --filter "Name=vpc-id,Values=<vpc-id>"
 4. **Test Manually**: Use AWS CLI to trigger builds manually
 
 #### Manual Build Test
+
 ```bash
 aws codebuild start-build --project-name <project-name>
 ```
@@ -865,6 +906,7 @@ aws codebuild start-build --project-name <project-name>
 ## Contributing
 
 Contributions welcome! Please:
+
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality

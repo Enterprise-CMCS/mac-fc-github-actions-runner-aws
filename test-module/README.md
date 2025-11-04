@@ -5,13 +5,16 @@ Simple test module to validate the CodeBuild GitHub Runner module using PAT auth
 ## Quick Start
 
 ### Step 1: Get AWS credential from Kion/Cloudtamer
+
 Get temporary AWS credential from Kion/Cloudtamer and run in on your terminal
 
 ### Step 2: Generate GitHub Token
+
 Create new or update existing PAT with the following scopes:
-  - `repo` - Full control of repositories
-  - `admin:repo_hook` - Webhook management
-  - `admin:org` - Organization administration (for organization repositories)
+
+- `repo` - Full control of repositories
+- `admin:repo_hook` - Webhook management
+- `admin:org` - Organization administration (for organization repositories)
 
 ### 3. Create Secret with your GitHub PAT
 
@@ -44,6 +47,7 @@ terraform apply
 ```
 
 This creates:
+
 - CodeBuild project
 - IAM roles and policies
 - CloudWatch log group
@@ -95,6 +99,7 @@ aws codebuild batch-get-builds --ids <build-id>
 ## Authentication Methods Tested
 
 This test module uses **PAT (Personal Access Token)** authentication:
+
 - Default authentication method
 - Secret stored in AWS Secrets Manager (plaintext)
 - No manual AWS Console steps required

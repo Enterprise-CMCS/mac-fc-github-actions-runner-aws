@@ -94,7 +94,7 @@ locals {
       "- 1-hour token lifetime (vs 7-90 days for PAT)\n",
       "- No user dependency (persists when employees leave)\n",
       "- Better rate limits (12,500-15,000 vs 5,000 req/hr)\n"
-    ]) : join("", [
+      ]) : join("", [
       "GitHub App Authentication Configured (Using Existing Connection)\n\n",
       "Connection ARN: ${var.github_connection_arn}\n\n",
       "Using your existing CodeConnections connection.\n",
@@ -106,7 +106,7 @@ locals {
       "- No user dependency\n",
       "- Better rate limits (12,500-15,000 vs 5,000 req/hr)\n"
     ])
-  ) : (
+    ) : (
     # PAT authentication
     var.skip_webhook_creation ? join("", [
       "Webhook Creation Skipped\n\n",
@@ -122,7 +122,7 @@ locals {
       "Token Requirements:\n",
       "- Classic PAT: 'repo' and 'admin:repo_hook' scopes\n",
       "- Fine-grained PAT: 'Actions: read+write' and 'Metadata: read'\n"
-    ]) : join("", [
+      ]) : join("", [
       "Personal Access Token Authentication Configured\n\n",
       "Secret: ${var.github_secret_name}\n",
       "Webhook: Created\n",
