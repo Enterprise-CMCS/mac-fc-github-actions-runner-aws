@@ -1,6 +1,46 @@
 # github-actions-runner-aws
 
-## About
+## Recommended: AWS CodeBuild Runner Module
+
+**The `codebuild/` module is the recommended approach for self-hosted GitHub Actions runners on AWS.**
+
+### Why CodeBuild?
+
+- **Zero Maintenance**: No Docker images to maintain or update
+- **Serverless**: No ECS clusters or tasks to manage
+- **Cost-Effective**: ~40% savings vs GitHub-hosted runners, pay per build minute
+- **AWS Native**: Direct IAM role integration, no credential management
+- **Secure**: Ephemeral runners with no persistent state
+
+### Quick Start
+
+```hcl
+module "github_runner" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.0.0"
+
+  github_owner       = "your-org"
+  github_repository  = "your-repo"
+  github_secret_name = "github/actions/token"
+  project_name       = "my-project"
+}
+```
+
+### Documentation
+
+See the [codebuild/ module README](./codebuild/README.md) for complete documentation, including:
+
+- GitHub App authentication (recommended)
+- VPC configuration
+- Troubleshooting
+- Examples
+
+---
+
+## DEPRECATED: ECS/Docker Runner Implementation
+
+**The sections below describe the legacy ECS-based runner implementation. This approach is deprecated in favor of the CodeBuild module above.**
+
+### About
 
 This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module, `github-actions-runner-terraform`, which can be run in your environment to provision:
 
@@ -10,7 +50,7 @@ This repository contains Dockerfiles for self-hosted GitHub Actions runners and 
 
 This module uses the ECR repository created in the MACBIS Shared DSO Dev account, managed in the `terraform/dev/account` directory, and accessible by the MACBIS organization.
 
-## Runner Dockerfiles
+### Runner Dockerfiles
 
 - `latest.Dockerfile`: A minimal runner image based on Ubuntu. Reference this image with the `latest` image tag
 - `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright-v{semver}` image tag, where `{semver}` is the semantic version of the Playwright base image defined in the `playwright.Dockerfile`
@@ -21,15 +61,15 @@ The current version of the runner is stored in `docker.env` as `ACTIONS_VERSION`
 export $(cat docker.env) && docker build -f latest.Dockerfile --build-arg ACTIONS_VERSION -t local-latest .
 ```
 
-## Set Up
+### Set Up
 
 See [Confluence](https://confluenceent.cms.gov/x/zR9AD) for setup steps.
 
-### IAM Permissions
+#### IAM Permissions
 
 The `github-oidc` module that configures the IAM resources necessary to use GitHub's OIDC provider to retrieve short-term credentials from AWS is DEPRECATED. Use the official AWS OIDC role and identity provider modules. See [the confluence page for setting up a self-hosted runner](https://confluenceent.cms.gov/x/-Nj_Fw) for more information.
 
-## Local Github Token Testing
+### Local Github Token Testing
 
 This is strictly for testing purposes. These steps help test a Github token by running the docker image and enabling you to manually trigger the `entrypoint.sh` script locally via Docker. This does not require any AWS infrastructure deployed.
 
@@ -48,7 +88,7 @@ The `entrypoint.sh` script is what sets up the docker image to act as a runner, 
 3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
 4. In one of the workflows in the target repository, change the `runs-on` value to `self-hosted`. This will make the workflow use the registered self-hosted runner to complete its task, after which it will shut down.
 
-## Terraform Module
+### Terraform Module
 
 This repository contains a Terraform module `github-actions-runner-terraform` to deploy an ECS cluster, ECS service, and log to Cloudwatch in support of automating the deployment of ephemeral self-hosted Github Actions runners within AWS.
 
@@ -58,7 +98,7 @@ This module supports the following features:
 - Set default desired count for ECS Service (default is 0, assuming it will be managed by Github Actions workflow)
 - If you don't want the workflow to start and stop the ECS service then set the desired count to `1` so that the ECS service is always running.
 
-### Usage
+#### Usage
 
 See the instructions on the confluence page [Setting up a Self-Hosted GitHub Actions Runner](https://confluenceent.cms.gov/x/-Nj_Fw).
 
@@ -98,7 +138,7 @@ resource "aws_secretsmanager_secret_version" "this" {
 }
 ```
 
-### Data Sources
+#### Data Sources
 
 Some existing variable information can be looked-up in AWS via data sources. For example:
 
@@ -114,7 +154,7 @@ Will let you then use the ARN of that data source in this way:
 personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 ```
 
-### Required Parameters
+#### Required Parameters
 
 | Name                      | Description                                             |
 | ------------------------- | ------------------------------------------------------- |
@@ -124,7 +164,7 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | personal_access_token_arn | AWS SecretsManager ARN for GitHub personal access token |
 | github_repo_name          | The Github repository name                              |
 
-### Optional Parameters
+#### Optional Parameters
 
 | Name                     | Default Value     | Description                                                                                                                                                              |
 | ------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -138,17 +178,17 @@ personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
 | tags                     | {}                | Additional tags to apply                                                                                                                                                 |
 | runner_labels            | ""                | A comma-separated list of labels to apply to the runner                                                                                                                                            |
 
-### Outputs
+#### Outputs
 
 See `outputs.tf`
 
-### Requirements
+#### Requirements
 
 | Name      | Version |
 | --------- | ------- |
 | terraform | >= 0.13 |
 | aws       | >= 3.0  |
 
-### Modules
+#### Modules
 
 None.
