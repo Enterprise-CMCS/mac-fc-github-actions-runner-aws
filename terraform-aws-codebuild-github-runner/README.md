@@ -413,10 +413,10 @@ jobs:
   build:
     # Use the label from terraform output
     runs-on: codebuild-my-project-prod-runner-${{ github.run_id }}-${{ github.run_attempt }}
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run tests
         run: |
           echo "Running on CodeBuild!"
@@ -645,12 +645,12 @@ output "setup_instructions" {
 ```hcl
 module "runner" {
   source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-  
+
   github_owner       = "my-org"
   github_repository  = "my-repo"
   github_secret_name = "github/token"
   project_name       = "ci"
-  
+
   enable_vpc = true
   vpc_config = {
     vpc_id             = aws_vpc.main.id
@@ -665,12 +665,12 @@ module "runner" {
 ```hcl
 module "runner" {
   source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-  
+
   github_owner       = "my-org"
   github_repository  = "my-repo"
   github_secret_name = "github/token"
   project_name       = "ci"
-  
+
   compute_type           = "BUILD_GENERAL1_LARGE"
   concurrent_build_limit = 50
 }
