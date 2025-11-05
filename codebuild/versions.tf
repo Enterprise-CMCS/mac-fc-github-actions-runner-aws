@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.0"
+      version = ">= 5.67.0" # Required for aws_codebuild_fleet support
     }
     null = {
       source  = "hashicorp/null"

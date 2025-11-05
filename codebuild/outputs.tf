@@ -10,7 +10,7 @@ output "project_arn" {
 
 output "runner_label" {
   description = "Runner label to use in GitHub Actions workflows"
-  value       = "codebuild-${aws_codebuild_project.runner.name}-$${github.run_id}-$${github.run_attempt}"
+  value       = "codebuild-${aws_codebuild_project.runner.name}-$${{github.run_id}}-$${{github.run_attempt}}"
 }
 
 output "runner_label_template" {
@@ -45,9 +45,63 @@ output "service_role_arn" {
   value       = aws_iam_role.codebuild.arn
 }
 
+output "codebuild_security_group_id" {
+  description = "CodeBuild project security group ID (use this to allow access to Redshift/RDS/ElastiCache/etc)"
+  value       = var.enable_vpc && var.vpc_config != null && var.managed_security_groups ? aws_security_group.codebuild_project_managed[0].id : null
+}
+
 output "cache_bucket" {
   description = "S3 cache bucket name (if enabled)"
   value       = var.cache_type == "S3" ? aws_s3_bucket.cache[0].id : null
+}
+
+output "docker_server_enabled" {
+  description = "Whether Docker Server mode is enabled"
+  value       = var.enable_docker_server
+}
+
+output "docker_server_fleet_arn" {
+  description = "Docker Server fleet ARN (if enabled)"
+  value       = var.enable_docker_server ? aws_codebuild_fleet.docker_server[0].arn : null
+}
+
+output "docker_server_fleet_name" {
+  description = "Docker Server fleet name (if enabled)"
+  value       = var.enable_docker_server ? aws_codebuild_fleet.docker_server[0].name : null
+}
+
+output "docker_server_security_group_id" {
+  description = "Docker Server fleet security group ID (auto-created if not provided)"
+  value = var.enable_docker_server && var.enable_vpc && var.vpc_config != null ? (
+    var.managed_security_groups ? aws_security_group.docker_server_managed[0].id : (
+      length(var.vpc_config.security_group_ids) > 0 ? var.vpc_config.security_group_ids[0] : aws_security_group.docker_server_default[0].id
+    )
+  ) : null
+}
+
+output "docker_server_capacity_mode" {
+  description = "Docker Server fleet capacity mode"
+  value = var.enable_docker_server ? (
+    var.docker_server_capacity == 1 && var.docker_server_overflow_behavior == "ON_DEMAND" ? "Minimum Reserved + On-Demand Overflow (most cost-effective)" :
+    var.docker_server_overflow_behavior == "QUEUE" ? "Reserved Only (${var.docker_server_capacity} instances)" :
+    var.docker_server_overflow_behavior == "ON_DEMAND" ? "Reserved + On-Demand Overflow (${var.docker_server_capacity} base instances)" :
+    "Custom"
+  ) : null
+}
+
+output "docker_server_base_capacity" {
+  description = "Docker Server fleet reserved base capacity"
+  value       = var.enable_docker_server ? var.docker_server_capacity : null
+}
+
+output "docker_server_overflow_behavior" {
+  description = "Docker Server fleet overflow behavior"
+  value       = var.enable_docker_server ? var.docker_server_overflow_behavior : null
+}
+
+output "privileged_mode" {
+  description = "Whether privileged mode is enabled (DinD without Docker Server)"
+  value       = var.enable_docker && !var.enable_docker_server
 }
 
 output "github_repository_url" {
@@ -78,8 +132,8 @@ output "setup_complete" {
 locals {
   setup_instructions = var.auth_method == "github_app" ? (
     var.github_connection_name != "" ? join("", [
-      "GitHub App Authentication Configured\n\n",
-      "MANUAL STEP REQUIRED - Authorize the connection:\n\n",
+      "✅ GitHub App Authentication Configured\n\n",
+      "⚠️  MANUAL STEP REQUIRED - Authorize the connection:\n\n",
       "Connection Name: ${var.github_connection_name}\n",
       "Connection ARN:  ${aws_codeconnections_connection.github[0].arn}\n",
       "Status:          ${aws_codeconnections_connection.github[0].connection_status}\n\n",
@@ -88,31 +142,37 @@ locals {
       "2. Find connection: \"${var.github_connection_name}\"\n",
       "3. Click \"Update pending connection\"\n",
       "4. Sign in to GitHub and select your GitHub App\n",
-      "5. Connection status will change from PENDING → AVAILABLE\n\n",
+      "5. Connection status will change from PENDING → AVAILABLE\n",
+      var.skip_webhook_creation ?
+      "6. Set skip_webhook_creation = false in your config\n" :
+      "6. Webhook already created ✅\n",
+      var.skip_webhook_creation ?
+      "7. Run 'terraform apply' again to create the webhook\n\n" :
+      "\n",
       "Once authorized, CodeBuild can automatically use GitHub App tokens.\n\n",
       "Security benefits:\n",
-      "- 1-hour token lifetime (vs 7-90 days for PAT)\n",
-      "- No user dependency (persists when employees leave)\n",
-      "- Better rate limits (12,500-15,000 vs 5,000 req/hr)\n"
+      "- ✅ 1-hour token lifetime (vs 7-90 days for PAT)\n",
+      "- ✅ No user dependency (persists when employees leave)\n",
+      "- ✅ Better rate limits (12,500-15,000 vs 5,000 req/hr)\n"
       ]) : join("", [
-      "GitHub App Authentication Configured (Using Existing Connection)\n\n",
+      "✅ GitHub App Authentication Configured (Using Existing Connection)\n\n",
       "Connection ARN: ${var.github_connection_arn}\n\n",
-      "Using your existing CodeConnections connection.\n",
+      "ℹ️  Using your existing CodeConnections connection.\n",
       "Ensure it's authorized and in AVAILABLE status.\n\n",
       "To check status:\n",
       "aws codeconnections get-connection --connection-arn ${var.github_connection_arn}\n\n",
       "Security benefits:\n",
-      "- 1-hour token lifetime (vs 7-90 days for PAT)\n",
-      "- No user dependency\n",
-      "- Better rate limits (12,500-15,000 vs 5,000 req/hr)\n"
+      "- ✅ 1-hour token lifetime (vs 7-90 days for PAT)\n",
+      "- ✅ No user dependency\n",
+      "- ✅ Better rate limits (12,500-15,000 vs 5,000 req/hr)\n"
     ])
     ) : (
     # PAT authentication
     var.skip_webhook_creation ? join("", [
-      "Webhook Creation Skipped\n\n",
+      "⚠️  Webhook Creation Skipped\n\n",
       "Secret: ${var.github_secret_name}\n",
       "Webhook: Skipped (skip_webhook_creation = true)\n\n",
-      "To complete setup:\n\n",
+      "📋 To complete setup:\n\n",
       "1. Ensure secret contains valid GitHub Personal Access Token:\n\n",
       "   aws secretsmanager put-secret-value \\\n",
       "     --secret-id ${var.github_secret_name} \\\n",
@@ -123,11 +183,11 @@ locals {
       "- Classic PAT: 'repo' and 'admin:repo_hook' scopes\n",
       "- Fine-grained PAT: 'Actions: read+write' and 'Metadata: read'\n"
       ]) : join("", [
-      "Personal Access Token Authentication Configured\n\n",
+      "✅ Personal Access Token Authentication Configured\n\n",
       "Secret: ${var.github_secret_name}\n",
-      "Webhook: Created\n",
+      "Webhook: ✅ Created\n",
       "Status: Ready to use!\n\n",
-      "For production, consider GitHub App authentication:\n",
+      "💡 For production, consider GitHub App authentication:\n",
       "- Set auth_method = \"github_app\"\n",
       "- Provides 1-hour auto-refreshing tokens\n",
       "- Better security and rate limits\n"
@@ -145,13 +205,13 @@ output "usage_instructions" {
 
     jobs:
       my-job:
-        runs-on: ${local.resource_prefix}-runner-$${github.run_id}-$${github.run_attempt}
+        runs-on: ${local.resource_prefix}-runner-$${{github.run_id}}-$${{github.run_attempt}}
         steps:
           - uses: actions/checkout@v4
           - run: echo "Running on CodeBuild!"
 
     Or use the full label:
 
-    runs-on: codebuild-${aws_codebuild_project.runner.name}-$${github.run_id}-$${github.run_attempt}
+    runs-on: codebuild-${aws_codebuild_project.runner.name}-$${{github.run_id}}-$${{github.run_attempt}}
   EOT
 }
