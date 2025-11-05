@@ -135,11 +135,10 @@ This module supports two authentication methods:
 
 ### Why GitHub App?
 
-- **24-720x shorter credential lifespan**: 1-hour tokens vs 7-90 day PATs
 - **No user dependency**: Persists when employees leave
-- **2.5-3x better API rate limits**: 12,500-15,000 vs 5,000 req/hr
 - **Organization-level control**: Admins can manage and revoke access
 - **Better audit trail**: GitHub App activity separate from user activity
+- **Shorter token lifetime**: 1-hour auto-refreshing tokens vs 7-90 day PATs
 
 ## Quick Start
 
