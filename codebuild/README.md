@@ -147,23 +147,11 @@ Choose your authentication method below:
 
 ### Option A: GitHub App Authentication (Recommended for Production)
 
-**Step 1: Create GitHub App** (One-time setup)
+**Prerequisites:**
+- GitHub App installed in your organization (create CMS ticket)
+- Required permissions: Repository Administration (Read & write), Contents (Read-only), Organization Self-hosted runners (Read & write)
 
-1. Go to GitHub Organization Settings → Developer settings → GitHub Apps → **New GitHub App**
-2. Configure the app:
-   - **Name**: `CodeBuild Runners` (or your choice)
-   - **Homepage URL**: Your organization URL
-   - **Webhook**: Uncheck "Active" (webhook handled by CodeBuild)
-   - **Repository permissions**:
-     - Administration: **Read and write**
-     - Contents: **Read-only**
-     - Metadata: **Read-only** (automatic)
-   - **Organization permissions**:
-     - Self-hosted runners: **Read and write**
-3. Click **Create GitHub App**
-4. Install the app on your organization or specific repositories
-
-**Step 2: Deploy the Runner (Module Creates Connection)**
+**Deploy with Terraform:**
 
 ```hcl
 module "github_runner" {
@@ -190,19 +178,9 @@ output "setup_instructions" {
 }
 ```
 
-**Step 3: Authorize Connection** (One-time manual step)
+**Authorize Connection:**
 
-After `terraform apply`, the module output will show:
-1. Direct link to AWS Console
-2. Connection name and status
-3. Step-by-step authorization instructions
-
-Simply:
-1. Click the console link
-2. Find your connection (status: PENDING)
-3. Click "Update pending connection"
-4. Authorize with GitHub and select your GitHub App
-5. Done! Connection status → AVAILABLE
+After `terraform apply`, follow the instructions in the `setup_complete` output to authorize the connection in AWS Console.
 
 **Alternative: Use Existing Connection**
 
@@ -573,6 +551,7 @@ vpc_config = {
 |--------|-------------|------|-------|
 | `log_group` | CloudWatch log group name | `string` | Log monitoring and debugging |
 | `cache_bucket` | S3 cache bucket name (if enabled) | `string` | Cache management and policies |
+| `codebuild_security_group_id` | CodeBuild project security group ID | `string` | Grant CodeBuild access to RDS/Redshift/ElastiCache |
 | `usage_instructions` | Formatted usage guide | `string` | Copy-paste workflow examples |
 
 ### Example Usage of Outputs
@@ -615,6 +594,17 @@ output "runner_label" {
 output "setup_instructions" {
   description = "Instructions for using the runner"
   value       = module.github_runner.usage_instructions
+}
+
+# Grant CodeBuild access to Redshift
+resource "aws_security_group_rule" "codebuild_to_redshift" {
+  type                     = "ingress"
+  from_port                = 5439
+  to_port                  = 5439
+  protocol                 = "tcp"
+  source_security_group_id = module.github_runner.codebuild_security_group_id
+  security_group_id        = aws_redshift_cluster.example.vpc_security_group_ids[0]
+  description              = "Allow CodeBuild runner access to Redshift"
 }
 ```
 

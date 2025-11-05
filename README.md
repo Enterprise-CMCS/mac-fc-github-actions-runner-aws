@@ -17,9 +17,9 @@ The `codebuild/` module uses AWS CodeBuild for serverless, zero-maintenance GitH
 
 ### Prerequisites
 
-- AWS credentials configured (Kion/Cloudtamer, AWS CLI, or environment variables)
-- Terraform >= 1.0
-- GitHub App installed (create CMS ticket) or Personal Access Token
+- **AWS Credentials**: Get temporary AWS credentials from Kion/Cloudtamer and configure them in your terminal
+- **Terraform** >= 1.0
+- **GitHub App** installed (create CMS ticket) or Personal Access Token
 
 ### Step 1: Request GitHub App Access
 
