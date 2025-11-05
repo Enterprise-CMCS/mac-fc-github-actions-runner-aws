@@ -389,64 +389,9 @@ jobs:
 
 | Variable | Description | Type | Default | Notes |
 |----------|-------------|------|---------|-------|
-| `enable_docker` | Enable Docker-in-Docker (privileged mode) | `bool` | `true` | Use when `enable_docker_server = false` |
-| `enable_docker_server` | Enable Docker Server mode (alternative to DinD) | `bool` | `true` | Requires `standard:7.0+` image |
-| `docker_server_capacity` | Base reserved capacity for Docker server fleet | `number` | `1` | 1-100; AWS requires minimum 1 |
-| `docker_server_overflow_behavior` | Fleet overflow behavior | `string` | `"ON_DEMAND"` | `QUEUE` or `ON_DEMAND` |
-| `docker_server_compute_type` | Compute type for Docker server | `string` | `"BUILD_GENERAL1_SMALL"` | SMALL, MEDIUM, or LARGE |
-| `docker_server_subnet_id` | Subnet for Docker server fleet | `string` | `""` | If empty, uses first `vpc_config.subnet_ids[0]` |
-| `docker_server_host` | Hostname/IP for Docker Server endpoint | `string` | `""` | Leave empty for auto-config (recommended) |
-| `docker_server_port` | Port for Docker Server endpoint | `number` | `9876` | AWS Docker Server port |
+| `enable_docker` | Enable Docker-in-Docker (privileged mode) | `bool` | `true` | Enables Docker support for builds |
 
-**Fleet Capacity Modes:**
-- **Minimum Reserved + Overflow** (default): `base_capacity = 1` + `overflow_behavior = "ON_DEMAND"` - Most cost-effective: 1 always-on instance + on-demand burst
-- **Reserved Only**: `base_capacity = N` + `overflow_behavior = "QUEUE"` - Fixed capacity, jobs queue when full
-- **Reserved + Overflow**: `base_capacity = N` (>1) + `overflow_behavior = "ON_DEMAND"` - Higher baseline + on-demand burst
-
-> **Note**: AWS CodeBuild Fleet requires minimum `base_capacity = 1`. Pure on-demand mode (0 reserved instances) is not supported.
-
-**Docker Server Configuration:**
-- CodeBuild **automatically configures** `DOCKER_HOST` when the fleet block is present
-- Docker Server listens on **port 9876** (not standard port 2375)
-- No manual `DOCKER_HOST` configuration needed in most cases
-- Security groups must allow port 9876 ingress (auto-created by this module)
-
-#### Docker Modes Comparison
-
-**Docker-in-Docker (DinD) - Traditional Approach:**
-- ✅ Works with any CodeBuild image version
-- ⚠️ Requires privileged mode
-- ⚠️ Performance overhead from nested containerization
-- ✅ Works in VPC configurations
-- **Use when:** You need compatibility with older images
-
-**Docker Server - Modern Approach (Recommended):**
-- ✅ No privileged mode required (better security posture)
-- ✅ Better performance with persistent layer cache
-- ✅ Dedicated managed Docker daemon
-- ✅ Works in VPC configurations
-- ⚠️ Requires `aws/codebuild/standard:7.0` or later
-- **Use when:** You want optimal security and performance
-
-**Example - Enable Docker Server:**
-```hcl
-module "github_runner" {
-  source = "path/to/module"
-
-  # ... other configuration ...
-
-  # Enable Docker Server mode (recommended)
-  build_image            = "aws/codebuild/standard:7.0"  # Required
-  enable_docker          = true
-  enable_docker_server   = true
-  docker_server_capacity = 2  # Scale based on concurrent builds
-
-  # Docker endpoint auto-configured by CodeBuild (no manual config needed)
-  # docker_server_host and docker_server_port use defaults
-}
-```
-
-**Security Note:** Even with privileged mode (DinD), CodeBuild provides VM-level isolation. Each build runs on single-tenant EC2 instances, so privileged container escape only reaches your dedicated VM, not shared infrastructure. See [AWS Security Documentation](https://docs.aws.amazon.com/codebuild/latest/userguide/security.html) for details.
+**Security Note:** CodeBuild provides VM-level isolation. Each build runs on single-tenant EC2 instances. See [AWS Security Documentation](https://docs.aws.amazon.com/codebuild/latest/userguide/security.html) for details.
 
 ### Network & Security
 
@@ -454,7 +399,7 @@ module "github_runner" {
 |----------|-------------|------|---------|-------|
 | `enable_vpc` | Deploy CodeBuild runners within a VPC | `bool` | `true` | Requires `vpc_config` when `true` |
 | `vpc_config` | VPC configuration object | `object` | `null` | Required when `enable_vpc = true` |
-| `managed_security_groups` | Create safe default SGs (project + fleet) | `bool` | `true` | Restricts Docker port 9876 to project SG |
+| `managed_security_groups` | Create managed security groups | `bool` | `true` | Auto-creates security groups when enabled |
 
 #### VPC Configuration Object
 
@@ -465,15 +410,6 @@ vpc_config = {
   security_group_ids = list(string) # Security group IDs (can be empty list [])
 }
 ```
-
-- Note: CodeBuild Docker Server Fleet requires exactly one subnet. Set `docker_server_subnet_id` to explicitly control which subnet is used for the fleet; otherwise the first `vpc_config.subnet_ids[0]` is used.
-
-**Security Group Notes:**
-- **Docker Server Fleet**: If `security_group_ids = []`, a default security group is auto-created with:
-  - **Ingress**: TCP port 9876 from VPC CIDR (Docker daemon connections)
-  - **Egress**: All traffic to 0.0.0.0/0 (pull images from Docker Hub, ECR, etc.)
-- **Custom Security Groups**: Provide your own for tighter control
-- **CodeBuild Project**: Uses same security groups as specified in `vpc_config`
 
 ### Caching & Performance
 
@@ -504,9 +440,7 @@ vpc_config = {
 - CloudWatch Logs KMS: set `cloudwatch_kms_key_arn` to encrypt log events with your KMS key.
 - S3 TLS-only access: enforced by default via bucket policy when `cache_type = "S3"`.
 - S3 encryption: `s3_cache_sse_mode` defaults to `SSE_S3`; set to `SSE_KMS` and optionally supply `s3_cache_kms_key_arn` to use a customer-managed key.
-- Managed Security Groups: set `managed_security_groups = true` (with `enable_vpc = true`) to create:
-  - Project SG: egress-only.
-  - Fleet SG: ingress TCP 9876 from the project SG only; egress-all.
+- Managed Security Groups: set `managed_security_groups = true` (with `enable_vpc = true`) to auto-create security groups for the CodeBuild project.
 
 | Type | vCPUs | Memory | Cost/min |
 |------|-------|--------|----------|
