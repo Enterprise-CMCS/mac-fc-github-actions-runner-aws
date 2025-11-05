@@ -5,7 +5,7 @@
 
 A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBuild. Run your GitHub Actions workflows on AWS infrastructure with full control and cost savings.
 
-## 🚀 Features
+## Features
 
 - **Zero Maintenance**: Fully managed by AWS CodeBuild
 - **Cost Effective**: ~40% cheaper than GitHub-hosted runners
@@ -15,7 +15,7 @@ A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBu
 - **Secure**: Ephemeral runners with no persistent state
 - **Simple**: Just 3 required variables to get started
 
-## 📊 Architecture
+## Architecture
 
 ```
 GitHub Repository
@@ -29,7 +29,7 @@ Execute GitHub Actions Job
 Report Results to GitHub
 ```
 
-## 🔧 Requirements
+## Requirements
 
 ### Terraform Version
 
@@ -124,7 +124,7 @@ The following AWS permissions are required for the user/role running Terraform:
   - Admin access to the target repository
   - Organization owner permissions (for organization repositories)
 
-## 🔐 Authentication Methods
+## Authentication Methods
 
 This module supports two authentication methods:
 
@@ -141,7 +141,7 @@ This module supports two authentication methods:
 - **Organization-level control**: Admins can manage and revoke access
 - **Better audit trail**: GitHub App activity separate from user activity
 
-## 🏃 Quick Start
+## Quick Start
 
 Choose your authentication method below:
 
@@ -364,58 +364,8 @@ jobs:
 
 
 
-**Alternative: If the secret already exists**, you can use a data source:
 
-```hcl
-data "aws_secretsmanager_secret" "github_token" {
-  name = "github/actions/runner-token"
-}
-
-module "github_runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-
-  github_owner       = "your-org"
-  github_repository  = "your-repo"
-  github_secret_name = data.aws_secretsmanager_secret.github_token.name
-
-  project_name = "my-project"
-  environment  = "prod"
-}
-```
-
-**Note for module consumers**: If you're creating the secret resource in your code and passing it to this module, you may need to add an explicit dependency:
-
-```hcl
-module "github_runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-
-  # ... other variables ...
-
-  depends_on = [aws_secretsmanager_secret.github_token]
-}
-```
-
-### Using in GitHub Actions
-
-```yaml
-name: CI
-on: [push, pull_request]
-
-jobs:
-  build:
-    # Use the label from terraform output
-    runs-on: codebuild-my-project-prod-runner-${{ github.run_id }}-${{ github.run_attempt }}
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Run tests
-        run: |
-          echo "Running on CodeBuild!"
-          aws sts get-caller-identity  # AWS credentials available!
-```
-
-## 📋 Inputs
+## Inputs
 
 ### Required Variables
 
@@ -434,7 +384,7 @@ jobs:
 | `github_connection_arn` | Existing CodeConnections connection ARN | `string` | `""` | Use if you already have an authorized connection |
 | `github_secret_name` | AWS Secrets Manager secret name containing GitHub PAT as plaintext. Secret must exist before running terraform. Create with: aws secretsmanager create-secret --name <name> --secret-string 'ghp_token' | `string` | `""` | Required if `auth_method="pat"` |
 | `github_token` | GitHub Personal Access Token (sensitive) | `string` | `""` | Only for development/testing with `auth_method="pat"` |
-| `skip_webhook_creation` | Skip webhook creation (useful if you need to populate secret before creating webhook) | `bool` | `false` | For two-phase deployments |
+| `skip_webhook_creation` | Skip webhook creation (useful if you need to populate secret before creating webhook) | `bool` | `true` | For two-phase deployments |
 
 > **GitHub App Authentication** (`auth_method="github_app"`):
 > - **Option 1 (Recommended)**: Set `github_connection_name` - module creates connection, you authorize in console
@@ -570,9 +520,9 @@ vpc_config = {
 > - `Project: <project_name>`
 > - `ManagedBy: Terraform`
 
-## 📊 Compute Types
+## Compute Types
 
-## 🔒 Security Options
+## Security Options
 
 - CloudWatch Logs KMS: set `cloudwatch_kms_key_arn` to encrypt log events with your KMS key.
 - S3 TLS-only access: enforced by default via bucket policy when `cache_type = "S3"`.
@@ -589,7 +539,7 @@ vpc_config = {
 | `BUILD_GENERAL1_XLARGE` | 36 | 72 GB | $0.034 |
 | `BUILD_GENERAL1_2XLARGE` | 72 | 144 GB | $0.068 |
 
-## 💰 Cost Comparison
+## Cost Comparison
 
 | Runner Type | Cost per Minute | Monthly (1000 mins) |
 |-------------|-----------------|---------------------|
@@ -598,7 +548,7 @@ vpc_config = {
 | CodeBuild Medium | $0.005 | $5.00 |
 | CodeBuild Large | $0.010 | $10.00 |
 
-## 📤 Outputs
+## Outputs
 
 ### Primary Outputs
 
@@ -668,7 +618,7 @@ output "setup_instructions" {
 }
 ```
 
-## 🔒 Security
+## Security
 
 - **Ephemeral Runners**: Each job gets a fresh runner that's destroyed after use
 - **IAM Roles**: Fine-grained AWS permissions per project
@@ -676,137 +626,40 @@ output "setup_instructions" {
 - **VPC Support**: Optional network isolation
 - **No Persistent State**: No data leakage between jobs
 
-## 📖 Examples
 
-### Basic Setup with PAT
-```hcl
-module "runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-
-  github_owner       = "my-org"
-  github_repository  = "my-repo"
-  github_secret_name = "github/token"
-  project_name       = "ci"
-}
-```
-
-### With GitHub App (Production - Recommended)
-```hcl
-module "runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-
-  # GitHub App authentication (module creates connection)
-  auth_method            = "github_app"
-  github_connection_name = "my-github-app"
-
-  github_owner      = "my-org"
-  github_repository = "my-repo"
-  project_name      = "ci"
-  environment       = "prod"
-}
-
-# Module outputs authorization instructions
-output "setup_instructions" {
-  value = module.runner.setup_complete
-}
-```
-
-### With VPC
-```hcl
-module "runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-  
-  github_owner       = "my-org"
-  github_repository  = "my-repo"
-  github_secret_name = "github/token"
-  project_name       = "ci"
-  
-  enable_vpc = true
-  vpc_config = {
-    vpc_id             = aws_vpc.main.id
-    subnet_ids         = aws_subnet.private[*].id
-    security_group_ids = [aws_security_group.runner.id]
-  }
-}
-```
-
-### High Performance
-```hcl
-module "runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
-  
-  github_owner       = "my-org"
-  github_repository  = "my-repo"
-  github_secret_name = "github/token"
-  project_name       = "ci"
-  
-  compute_type           = "BUILD_GENERAL1_LARGE"
-  concurrent_build_limit = 50
-}
-```
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
 #### 1. Secret-Related Errors
 
-**Error**: `Error retrieving secret: ResourceNotFoundException`
+**Common secret errors and solutions:**
 
-**Symptoms**: Terraform fails when trying to read the secret during apply
-
-**Cause**: The secret doesn't exist yet, or the secret name is incorrect
-
-**Note**: As of v1.1.0, the module includes **automatic secret validation** that checks if the secret exists before creating any infrastructure. If the secret is missing, you'll see a clear error message with instructions before any resources are created.
-
-**Solutions**:
-- ✅ Create the secret before running `terraform apply`:
-  ```bash
-  aws secretsmanager create-secret \
-    --name "github/actions/runner-token" \
-    --secret-string "ghp_your_actual_token_here"
-  ```
-- ✅ Create the secret via AWS CLI before running terraform apply
-- ✅ If using a data source, ensure the secret exists first
-- ✅ Add explicit `depends_on` to the module if needed
-
-**Error**: `Error creating CodeBuild webhook: InvalidInputException`
-
-**Symptoms**: Webhook creation fails after applying Terraform
-**Cause**: The secret value is still a placeholder or empty
-
-**Solutions**:
-- ✅ Update the secret value with your actual GitHub token:
-  ```bash
-  aws secretsmanager put-secret-value \
-    --secret-id "github/actions/runner-token" \
-    --secret-string "ghp_your_actual_token_here"
-  ```
-- ✅ Verify the token has the correct permissions (`repo`, `admin:repo_hook`, `admin:org`)
-- ✅ Re-run `terraform apply` after updating the secret
-
-**Error**: `Error: data source depends on resource that couldn't be found`
-
-**Symptoms**: Terraform plan fails with dependency errors
-**Cause**: The module tries to read the secret before it's created
-
-**Solutions**:
-- ✅ Add `depends_on = [aws_secretsmanager_secret.github_token]` to the module block
-- ✅ Use a data source instead of creating the secret in the same apply
-
-**Migrating from JSON to Plaintext format:**
-
-If you previously used JSON format (`{"token":"value"}`), you need to update your secret:
-
+**Secret doesn't exist:**
 ```bash
-# Option 1: Update via CLI
+# Create the secret before running terraform apply
+aws secretsmanager create-secret \
+  --name "github/actions/runner-token" \
+  --secret-string "ghp_your_actual_token_here"
+```
+
+**Invalid token or webhook creation fails:**
+```bash
+# Update secret with valid token
 aws secretsmanager put-secret-value \
   --secret-id "github/actions/runner-token" \
-  --secret-string "ghp_your_token_value_only"
+  --secret-string "ghp_your_actual_token_here"
+```
 
-# Option 2: Update via Console
-# Navigate to Secrets Manager → Select secret → Retrieve secret value → Edit →
-# Change from JSON to Plaintext and paste token directly
+Verify token has required scopes: `repo`, `admin:repo_hook`, `admin:org`
+
+**Terraform dependency errors:**
+Add explicit dependency if creating secret in same terraform apply:
+```hcl
+module "github_runner" {
+  # ... configuration ...
+  depends_on = [aws_secretsmanager_secret.github_token]
+}
 ```
 
 #### 2. Runner Not Picking Up Jobs
@@ -950,7 +803,7 @@ aws ec2 describe-nat-gateways --filter "Name=vpc-id,Values=<vpc-id>"
 aws codebuild start-build --project-name <project-name>
 ```
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please:
 1. Fork the repository
@@ -958,15 +811,15 @@ Contributions welcome! Please:
 3. Add tests for new functionality
 4. Submit a pull request
 
-## 📜 License
+## License
 
 Apache 2.0 - See [LICENSE](LICENSE) for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built by the Enterprise-CMCS team for the community.
 
-## 📚 References
+## References
 
 - [AWS CodeBuild GitHub Actions](https://docs.aws.amazon.com/codebuild/latest/userguide/action-runner.html)
 - [GitHub Self-Hosted Runners](https://docs.github.com/en/actions/hosting-your-own-runners)
