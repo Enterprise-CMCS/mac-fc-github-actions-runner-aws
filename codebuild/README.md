@@ -674,13 +674,10 @@ Contributions welcome! Please:
 3. Add tests for new functionality
 4. Submit a pull request
 
-## License
-
-Apache 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-Built by the Enterprise-CMCS team for the community.
+Built by mac-fc-embedded team for Enterprise CMS teams.
 
 ## References
 

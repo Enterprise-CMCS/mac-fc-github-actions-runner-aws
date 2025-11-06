@@ -29,7 +29,7 @@ Create a CMS ticket to install and enable the GitHub App for your repository.
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.4.0"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
 
   auth_method            = "github_app"
   github_connection_name = "my-github-connection"
@@ -96,7 +96,7 @@ aws secretsmanager create-secret \
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.4.0"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
 
   auth_method        = "pat"
   github_secret_name = "github/actions/runner-token"
