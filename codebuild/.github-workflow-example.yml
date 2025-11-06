@@ -1,0 +1,107 @@
+# Example GitHub Actions Workflow for CodeBuild Self-Hosted Runner
+# This workflow demonstrates:
+# 1. Docker-in-Docker capability for building images
+# 2. VPC connectivity to internal CMS resources (Artifactory, internal services)
+
+name: CodeBuild Runner Example
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  docker-build:
+    name: Build Docker Image
+    # Replace YOUR-PROJECT with your actual project_name from terraform
+    runs-on: codebuild-YOUR-PROJECT-dev-runner-${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          echo "Building Docker image with CodeBuild self-hosted runner..."
+          docker build -t myapp:${{ github.sha }} .
+          echo "Docker build successful!"
+
+      - name: Test Docker Image
+        run: |
+          echo "Testing the built image..."
+          docker run --rm myapp:${{ github.sha }} --version
+          echo "Image works correctly!"
+
+      - name: Build Multi-Stage Image
+        run: |
+          echo "Testing multi-stage Docker build..."
+          cat > Dockerfile.multistage << 'EOF'
+          FROM node:18 AS builder
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm install
+          COPY . .
+          RUN npm run build
+
+          FROM node:18-slim
+          WORKDIR /app
+          COPY --from=builder /app/dist ./dist
+          CMD ["node", "dist/index.js"]
+          EOF
+          docker build -f Dockerfile.multistage -t myapp-multistage:${{ github.sha }} .
+          echo "Multi-stage build successful!"
+
+  vpc-connectivity:
+    name: Test VPC Access to Internal Resources
+    runs-on: codebuild-YOUR-PROJECT-dev-runner-${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Test Artifactory Access
+        run: |
+          echo "Testing Artifactory connectivity from self-hosted runner..."
+          curl --connect-timeout 5 --max-time 10 -I https://artifactory.cloud.cms.gov/ui/packages
+          echo "Artifactory is reachable from VPC"
+
+      - name: Test Maven Repository Access
+        run: |
+          echo "Testing Maven repository access..."
+          curl --connect-timeout 5 --max-time 10 -I https://artifactory.cloud.cms.gov/artifactory/maven-public/
+          echo "Maven repository accessible"
+
+      - name: Test NPM Registry Access
+        run: |
+          echo "Testing NPM registry access..."
+          curl --connect-timeout 5 --max-time 10 -I https://artifactory.cloud.cms.gov/artifactory/api/npm/npm-public/
+          echo "NPM registry accessible"
+
+      - name: Test Other Internal Services
+        run: |
+          echo "Testing connectivity to other internal CMS resources..."
+          # Add your internal endpoints here
+          # curl --connect-timeout 5 https://your-internal-service.cms.gov
+          echo "All internal services are reachable from self-hosted runner"
+
+  combined-docker-and-vpc:
+    name: Docker Build with Private Registry
+    runs-on: codebuild-YOUR-PROJECT-dev-runner-${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Pull Base Image from Artifactory
+        run: |
+          echo "Pulling base image from internal Artifactory registry..."
+          # Example: docker pull artifactory.cloud.cms.gov/docker-local/your-base-image:latest
+          echo "Successfully pulled from private registry in VPC"
+
+      - name: Build with Internal Dependencies
+        run: |
+          echo "Building Docker image with dependencies from Artifactory..."
+          # Your Dockerfile can reference Artifactory for npm/maven/pip packages
+          docker build -t myapp-with-private-deps:${{ github.sha }} .
+          echo "Build with private dependencies successful!"

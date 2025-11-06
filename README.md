@@ -1,154 +1,126 @@
 # github-actions-runner-aws
 
-## About
+Terraform modules for creating self-hosted GitHub Actions runners on AWS.
 
-This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module, `github-actions-runner-terraform`, which can be run in your environment to provision:
+## CodeBuild (Recommended)
 
-- ECS Cluster
-- ECS Service
-- ECS Fargate task definition to spin up an instance of this runner _per job_ in your GitHub Actions workflow
+The `codebuild/` module uses AWS CodeBuild for serverless, zero-maintenance GitHub Actions runners.
 
-This module uses the ECR repository created in the MACBIS Shared DSO Dev account, managed in the `terraform/dev/account` directory, and accessible by the MACBIS organization.
+**Benefits:**
 
-## Runner Dockerfiles
+- Zero maintenance - no Docker images to update
+- Serverless - no EC2 or ECS to manage
+- Cost effective - ~40% savings vs GitHub-hosted runners
+- AWS native - direct IAM role integration
+- Secure - ephemeral runners with no persistent state
 
-- `latest.Dockerfile`: A minimal runner image based on Ubuntu. Reference this image with the `latest` image tag
-- `playwright.Dockerfile`: An image using the [`playwright:focal` base image](https://mcr.microsoft.com/en-us/product/playwright/about) for Playwright dependencies. Reference this image with the `playwright-v{semver}` image tag, where `{semver}` is the semantic version of the Playwright base image defined in the `playwright.Dockerfile`
+## Quick Start
 
-The current version of the runner is stored in `docker.env` as `ACTIONS_VERSION`. To build the Dockerfiles locally, you must first export this environment variable, then tell Docker to use it as a [build argument from the environment](https://docs.docker.com/engine/reference/commandline/build/#build-arg), like so:
+### Prerequisites
+
+- **AWS Credentials**: Get temporary AWS credentials from Kion/Cloudtamer and configure them in your terminal
+- **Terraform** >= 1.0
+- **GitHub App** installed (create CMS ticket) or Personal Access Token
+
+### Step 1: Request GitHub App Access
+
+Create a CMS ticket to install and enable the GitHub App for your repository.
+
+### Step 2: Deploy with Terraform
+
+```hcl
+module "github_runner" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
+
+  auth_method            = "github_app"
+  github_connection_name = "my-github-connection"
+
+  github_owner      = "your-org"
+  github_repository = "your-repo"
+  project_name      = "my-project"
+  environment       = "dev"
+}
+
+output "setup_instructions" {
+  value = module.github_runner.setup_complete
+}
+```
 
 ```bash
-export $(cat docker.env) && docker build -f latest.Dockerfile --build-arg ACTIONS_VERSION -t local-latest .
+terraform init
+terraform apply
 ```
 
-## Set Up
+### Step 3: Authorize Connection
 
-See [Confluence](https://confluenceent.cms.gov/x/zR9AD) for setup steps.
+After `terraform apply`, follow output instructions to authorize the connection in AWS Console.
 
-### IAM Permissions
+### Step 4: Enable Webhook
 
-The `github-oidc` module that configures the IAM resources necessary to use GitHub's OIDC provider to retrieve short-term credentials from AWS is DEPRECATED. Use the official AWS OIDC role and identity provider modules. See [the confluence page for setting up a self-hosted runner](https://confluenceent.cms.gov/x/-Nj_Fw) for more information.
+Set `skip_webhook_creation = false` in your module and run:
 
-## Local Github Token Testing
+```bash
+terraform apply
+```
 
-This is strictly for testing purposes. These steps help test a Github token by running the docker image and enabling you to manually trigger the `entrypoint.sh` script locally via Docker. This does not require any AWS infrastructure deployed.
+### Step 5: Use in GitHub Actions
 
-The `entrypoint.sh` script is what sets up the docker image to act as a runner, including registration with the repository specified.
+```yaml
+name: CI
+on: [push]
 
-1. Clone this repository to your machine.
-2. Ensure your environment variables are populated:
-   - `PERSONAL_ACCESS_TOKEN` - Your GitHub personal access token with repository permissions.
-     - Go to Settings > Developer Settings > Personal Access Token, and click on **Generate new token**
-       ![Where to Generate a New Token](./GitHubPAT.png)
-     - Give your token a note and check the box to give full control of private repositories
-       ![Repository Permissions](./GitHubPAT2.png)
-     - Once generated, be sure to save your token in a secure location such as 1pass or AWS Secrets Manager
-   - `REPO_OWNER` - The name of the repository owner, e.g. `Enterprise-CMCS`
-   - `REPO_NAME` - The name of the repository you are configuring the runners for
-3. Build and run the image. `./entrypoint.sh` should register the runner with your repository and start listening for jobs.
-4. In one of the workflows in the target repository, change the `runs-on` value to `self-hosted`. This will make the workflow use the registered self-hosted runner to complete its task, after which it will shut down.
+jobs:
+  build:
+    runs-on: codebuild-my-project-dev-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Running on CodeBuild!"
+```
 
-## Terraform Module
+## Alternative: Personal Access Token
 
-This repository contains a Terraform module `github-actions-runner-terraform` to deploy an ECS cluster, ECS service, and log to Cloudwatch in support of automating the deployment of ephemeral self-hosted Github Actions runners within AWS.
+If GitHub App is not available, you can use a Personal Access Token.
 
-This module supports the following features:
+### Step 1: Create GitHub Token
 
-- Optionally pass an existing ECS Cluster, and if not, create one
-- Set default desired count for ECS Service (default is 0, assuming it will be managed by Github Actions workflow)
-- If you don't want the workflow to start and stop the ECS service then set the desired count to `1` so that the ECS service is always running.
+Generate a PAT with scopes: `repo`, `admin:repo_hook`, `admin:org`
 
-### Usage
+### Step 2: Store Token in AWS Secrets Manager
 
-See the instructions on the confluence page [Setting up a Self-Hosted GitHub Actions Runner](https://confluenceent.cms.gov/x/-Nj_Fw).
+```bash
+aws secretsmanager create-secret \
+  --name "github/actions/runner-token" \
+  --secret-string "ghp_your_token_here"
+```
+
+### Step 3: Deploy with Terraform
 
 ```hcl
-module "github-actions-runner-aws" {
-  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//github-actions-runner-terraform?ref=v5.0.0"
+module "github_runner" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
 
-  # ECS variables
-  environment               = "${environment}"
-  ecs_vpc_id                = "${vpc.id}"
-  ecs_subnet_ids            = "${vpc.private_subnets.id}"
+  auth_method        = "pat"
+  github_secret_name = "github/actions/runner-token"
 
-  # GitHub Runner variables
-  personal_access_token_arn = "aws_secretsmanager_secret_version.this.arn"
-  github_repo_name          = "${repo_name}"
-  github_repo_owner         = "${repo_owner}"
-
-  # IAM variables
-  role_path = "/delegatedadmin/developer/"
-  permissions_boundary = "arn:aws:iam::{your AWS account ID}:policy/cms-cloud-admin/developer-boundary-policy"
-}
-
-resource "aws_secretsmanager_secret" "this" {
-  description = "Secret to store github access token"
-  name        = "/github-runner-token"
-}
-
-resource "aws_secretsmanager_secret_version" "this" {
-  secret_id     = aws_secretsmanager_secret.this.id
-  secret_string = "placeholder"
-
-  lifecycle {
-    ignore_changes = [
-      secret_string
-    ]
-  }
+  github_owner      = "your-org"
+  github_repository = "your-repo"
+  project_name      = "my-project"
+  environment       = "dev"
 }
 ```
 
-### Data Sources
+Follow Steps 4-5 from above to enable webhook and use in workflows.
 
-Some existing variable information can be looked-up in AWS via data sources. For example:
+## Full Documentation
 
-```hcl
-data "aws_secretsmanager_secret_version" "token" {
-  secret_id = "/github-runner-dev/token"
-}
-```
+See [codebuild/README.md](./codebuild/README.md) for:
 
-Will let you then use the ARN of that data source in this way:
+- Detailed configuration options
+- VPC configuration
+- Docker support (privileged mode)
+- Advanced examples
+- Troubleshooting
 
-```hcl
-personal_access_token_arn = data.aws_secretsmanager_secret_version.token.arn
-```
+## ECS [DEPRECATED]
 
-### Required Parameters
-
-| Name                      | Description                                             |
-| ------------------------- | ------------------------------------------------------- |
-| environment               | Environment name (used in naming resources)             |
-| ecs_vpc_id                | VPC ID to be used by ECS                                |
-| ecs_subnet_ids            | Subnet IDs for the ECS tasks.                           |
-| personal_access_token_arn | AWS SecretsManager ARN for GitHub personal access token |
-| github_repo_name          | The Github repository name                              |
-
-### Optional Parameters
-
-| Name                     | Default Value     | Description                                                                                                                                                              |
-| ------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| cloudwatch_log_retention | 731               | Number of days to retain Cloudwatch logs                                                                                                                                 |
-| ecr_repo_tag             | "latest"          | The tag to identify and pull the image in ECR repo                                                                                                                       |
-| ecs_desired_count        | 0                 | Sets the default desired count for task definitions within the ECS service                                                                                               |
-| assign_public_ip         | "false"           | Choose whether to assign a public IP address to the Elastic Network Interface                                                                                            |
-| role_path                | "/"               | The path in which to create the assume roles and policies. Refer to [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html) for more |
-| permissions_boundary     | ""                | ARN of the policy that is used to set the permissions boundary for the role                                                                                              |
-| github_repo_owner        | "Enterprise-CMCS" | The name of the Github repo owner                                                                                                                                        |
-| tags                     | {}                | Additional tags to apply                                                                                                                                                 |
-| runner_labels            | ""                | A comma-separated list of labels to apply to the runner                                                                                                                                            |
-
-### Outputs
-
-See `outputs.tf`
-
-### Requirements
-
-| Name      | Version |
-| --------- | ------- |
-| terraform | >= 0.13 |
-| aws       | >= 3.0  |
-
-### Modules
-
-None.
+The ECS-based runner is deprecated. See [Usage.md](./Usage.md) for legacy documentation.
