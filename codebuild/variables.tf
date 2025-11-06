@@ -38,7 +38,7 @@ variable "auth_method" {
 
   validation {
     condition     = contains(["pat", "github_app"], var.auth_method)
-    error_message = "auth_method must be 'pat' or 'github_app'."
+    error_message = "Authentication method must be either 'pat' or 'github_app'."
   }
 }
 
@@ -148,7 +148,7 @@ variable "s3_cache_sse_mode" {
 
   validation {
     condition     = contains(["SSE_S3", "SSE_KMS"], var.s3_cache_sse_mode)
-    error_message = "s3_cache_sse_mode must be SSE_S3 or SSE_KMS."
+    error_message = "S3 cache SSE mode must be either 'SSE_S3' or 'SSE_KMS'."
   }
 }
 
