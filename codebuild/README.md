@@ -13,7 +13,7 @@ A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBu
 - **AWS Native**: Direct IAM role integration for AWS services
 - **Secure**: Ephemeral runners with no persistent state
 - **Simple**: Just 3 required variables to get started
-- **Docker Support**: Docker-in-Docker via CodeBuild privileged mode 
+- **Docker Support**: Docker-in-Docker via CodeBuild privileged mode
 
 ## Architecture
 
