@@ -102,12 +102,6 @@ variable "enable_docker" {
   default     = true
 }
 
-variable "enable_docker_server" {
-  description = "Enable Docker Server mode (alternative to privileged DinD). Requires standard:7.0+ image. Provides managed Docker daemon without privileged mode."
-  type        = bool
-  default     = false
-}
-
 variable "enable_vpc" {
   description = "Whether to create and use VPC"
   type        = bool
@@ -125,7 +119,7 @@ variable "vpc_config" {
 }
 
 variable "managed_security_groups" {
-  description = "Create and use managed security groups for the CodeBuild project and Docker server fleet (restricts Docker port 9876 to project SG). Requires enable_vpc = true."
+  description = "Create and use managed security groups for the CodeBuild project. Requires enable_vpc = true."
   type        = bool
   default     = true
 }
@@ -185,61 +179,6 @@ variable "cloudwatch_kms_key_arn" {
   description = "Optional KMS key ARN for encrypting CloudWatch Logs. If set, the log group will use this key."
   type        = string
   default     = ""
-}
-
-variable "docker_server_capacity" {
-  description = "Base capacity for Docker server fleet (number of reserved Docker daemon instances). AWS requires minimum 1. Set to 1 for most cost-effective mode with on-demand overflow."
-  type        = number
-  default     = 1
-
-  validation {
-    condition     = var.docker_server_capacity >= 1 && var.docker_server_capacity <= 100
-    error_message = "Docker server capacity must be between 1 and 100 (AWS minimum is 1)."
-  }
-}
-
-variable "docker_server_compute_type" {
-  description = "Compute type for Docker server fleet"
-  type        = string
-  default     = "BUILD_GENERAL1_SMALL"
-
-  validation {
-    condition = contains([
-      "BUILD_GENERAL1_SMALL",
-      "BUILD_GENERAL1_MEDIUM",
-      "BUILD_GENERAL1_LARGE"
-    ], var.docker_server_compute_type)
-    error_message = "Invalid Docker server compute type. Must be BUILD_GENERAL1_SMALL, MEDIUM, or LARGE."
-  }
-}
-
-variable "docker_server_overflow_behavior" {
-  description = "Fleet overflow behavior when base capacity is full. QUEUE (default) waits for capacity, ON_DEMAND provisions on-demand instances."
-  type        = string
-  default     = "ON_DEMAND"
-
-  validation {
-    condition     = contains(["QUEUE", "ON_DEMAND"], var.docker_server_overflow_behavior)
-    error_message = "Overflow behavior must be QUEUE or ON_DEMAND."
-  }
-}
-
-variable "docker_server_subnet_id" {
-  description = "Subnet ID to use for the Docker server fleet (CodeBuild fleet currently supports a single subnet). If not set, the first subnet in vpc_config.subnet_ids is used."
-  type        = string
-  default     = ""
-}
-
-variable "docker_server_host" {
-  description = "Hostname or IP for Docker Server endpoint. Leave empty to let CodeBuild auto-configure (recommended)."
-  type        = string
-  default     = ""
-}
-
-variable "docker_server_port" {
-  description = "Port for Docker Server endpoint used by the build container. AWS Docker Server uses port 9876."
-  type        = number
-  default     = 9876
 }
 
 variable "concurrent_build_limit" {

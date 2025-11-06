@@ -19,67 +19,6 @@ resource "aws_iam_role" "codebuild" {
   depends_on = [null_resource.validate_secret]
 }
 
-# Docker Server Fleet Service Role (only when VPC is enabled)
-resource "aws_iam_role" "fleet" {
-  count = var.enable_docker_server && var.enable_vpc ? 1 : 0
-  name  = "${local.resource_prefix}-fleet-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "codebuild.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = merge(local.default_tags, {
-    Name = "${local.resource_prefix}-fleet-role"
-  })
-}
-
-# Fleet VPC Policy
-resource "aws_iam_role_policy" "fleet_vpc" {
-  count = var.enable_docker_server && var.enable_vpc ? 1 : 0
-  name  = "${local.resource_prefix}-fleet-vpc-policy"
-  role  = aws_iam_role.fleet[0].id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeDhcpOptions",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeVpcs",
-          "ec2:ModifyNetworkInterfaceAttribute",
-          "ec2:CreateNetworkInterfacePermission"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:CreateNetworkInterfacePermission"
-        ]
-        Resource = "arn:aws:ec2:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:network-interface/*"
-        Condition = {
-          StringEquals = {
-            "ec2:Subnet" = var.vpc_config != null ? var.vpc_config.subnet_ids : []
-          }
-        }
-      }
-    ]
-  })
-}
-
 # CodeBuild Base Policy
 resource "aws_iam_role_policy" "codebuild" {
   name = "${local.resource_prefix}-codebuild-policy"

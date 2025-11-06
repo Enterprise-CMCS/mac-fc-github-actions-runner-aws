@@ -28,11 +28,6 @@ locals {
       ManagedBy   = "Terraform"
     }
   )
-
-  # CodeBuild Fleet requires exactly one subnet
-  docker_server_subnet_id = var.docker_server_subnet_id != "" ? var.docker_server_subnet_id : (
-    length(try(var.vpc_config.subnet_ids, [])) > 0 ? var.vpc_config.subnet_ids[0] : ""
-  )
 }
 
 # Data sources
@@ -41,7 +36,7 @@ data "aws_region" "current" {}
 
 # VPC data source for security group rules (fallback default SG case)
 data "aws_vpc" "selected" {
-  count = var.enable_docker_server && var.enable_vpc && var.vpc_config != null ? 1 : 0
+  count = var.enable_vpc && var.vpc_config != null ? 1 : 0
   id    = var.vpc_config.vpc_id
 }
 
@@ -228,25 +223,16 @@ resource "aws_cloudwatch_log_group" "runner" {
   depends_on = [null_resource.validate_secret]
 }
 
-# Default Security Group for Docker Server Fleet
+# Default Security Group for CodeBuild Project
 # Auto-created when security_group_ids is empty (fallback)
-resource "aws_security_group" "docker_server_default" {
-  count = var.enable_docker_server && var.enable_vpc && var.vpc_config != null && length(var.vpc_config.security_group_ids) == 0 && !var.managed_security_groups ? 1 : 0
+resource "aws_security_group" "codebuild_default" {
+  count = var.enable_vpc && var.vpc_config != null && length(var.vpc_config.security_group_ids) == 0 && !var.managed_security_groups ? 1 : 0
 
-  name        = "${local.resource_prefix}-docker-server-sg"
-  description = "Default security group for Docker Server fleet - allows port 9876 from VPC"
+  name        = "${local.resource_prefix}-codebuild-default-sg"
+  description = "Default security group for CodeBuild project"
   vpc_id      = var.vpc_config.vpc_id
 
-  # Ingress: Allow Docker daemon connections (port 2375) from VPC
-  ingress {
-    description = "Docker daemon port from VPC"
-    from_port   = 2375
-    to_port     = 2375
-    protocol    = "tcp"
-    cidr_blocks = [data.aws_vpc.selected[0].cidr_block]
-  }
-
-  # Egress: Allow all outbound (for pulling images from Docker Hub, ECR, etc.)
+  # Egress: Allow all outbound (for pulling images from Docker Hub, ECR, GitHub, etc.)
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -256,17 +242,16 @@ resource "aws_security_group" "docker_server_default" {
   }
 
   tags = merge(local.default_tags, {
-    Name = "${local.resource_prefix}-docker-server-sg"
+    Name = "${local.resource_prefix}-codebuild-default-sg"
   })
 }
 
-# Managed security groups (recommended):
-# - CodeBuild project SG (egress only)
-# - Docker server SG (ingress 9876 only from project SG)
-resource "aws_security_group" "codebuild_project_managed" {
+# Managed security group for CodeBuild project (recommended)
+# Provides egress-only access
+resource "aws_security_group" "codebuild_managed" {
   count       = var.enable_vpc && var.vpc_config != null && var.managed_security_groups ? 1 : 0
-  name        = "${local.resource_prefix}-codebuild-sg"
-  description = "Managed SG for CodeBuild project"
+  name        = "${local.resource_prefix}-codebuild-managed-sg"
+  description = "Managed security group for CodeBuild project"
   vpc_id      = var.vpc_config.vpc_id
 
   egress {
@@ -277,65 +262,7 @@ resource "aws_security_group" "codebuild_project_managed" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(local.default_tags, { Name = "${local.resource_prefix}-codebuild-sg" })
-}
-
-resource "aws_security_group" "docker_server_managed" {
-  count       = var.enable_docker_server && var.enable_vpc && var.vpc_config != null && var.managed_security_groups ? 1 : 0
-  name        = "${local.resource_prefix}-docker-server-managed-sg"
-  description = "Managed SG for Docker Server fleet"
-  vpc_id      = var.vpc_config.vpc_id
-
-  ingress {
-    description     = "Allow TCP from CodeBuild project SG"
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [aws_security_group.codebuild_project_managed[0].id]
-  }
-
-  egress {
-    description = "Allow all outbound"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = merge(local.default_tags, { Name = "${local.resource_prefix}-docker-server-managed-sg" })
-}
-
-# CodeBuild Fleet for Docker Server (alternative to privileged DinD)
-# This provisions a managed Docker daemon that runs separately from the build container
-# Benefits: No privileged mode required, better security, persistent layer cache
-resource "aws_codebuild_fleet" "docker_server" {
-  count = var.enable_docker_server ? 1 : 0
-
-  base_capacity     = var.docker_server_capacity
-  overflow_behavior = var.docker_server_overflow_behavior
-  compute_type      = var.docker_server_compute_type
-  environment_type  = "LINUX_CONTAINER"
-  name              = "${local.resource_prefix}-docker-server"
-
-  # VPC configuration - must match CodeBuild project VPC for connectivity
-  # Requires fleet_service_role when VPC is enabled
-  # Uses auto-created default security group if user doesn't provide one
-  dynamic "vpc_config" {
-    for_each = var.enable_vpc && var.vpc_config != null ? [var.vpc_config] : []
-    content {
-      vpc_id = vpc_config.value.vpc_id
-      security_group_ids = var.managed_security_groups ? [aws_security_group.docker_server_managed[0].id] : (
-        length(vpc_config.value.security_group_ids) > 0 ? vpc_config.value.security_group_ids : [aws_security_group.docker_server_default[0].id]
-      )
-      subnets = [local.docker_server_subnet_id]
-    }
-  }
-
-  fleet_service_role = var.enable_vpc ? aws_iam_role.fleet[0].arn : null
-
-  tags = merge(local.default_tags, {
-    Name = "${local.resource_prefix}-docker-server"
-  })
+  tags = merge(local.default_tags, { Name = "${local.resource_prefix}-codebuild-managed-sg" })
 }
 
 # Import GitHub credentials at account level (PAT method)
@@ -402,8 +329,8 @@ resource "aws_codebuild_project" "runner" {
     image                       = var.build_image
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
-    # Privileged mode only needed for Docker-in-Docker (not Docker Server)
-    privileged_mode = var.enable_docker && !var.enable_docker_server
+    # Privileged mode required for Docker-in-Docker
+    privileged_mode = var.enable_docker
 
     environment_variable {
       name  = "GITHUB_OWNER"
@@ -423,25 +350,6 @@ resource "aws_codebuild_project" "runner" {
     environment_variable {
       name  = "ENVIRONMENT"
       value = var.environment
-    }
-
-    # Point docker CLI to the Docker Server fleet
-    # Note: CodeBuild automatically configures DOCKER_HOST when fleet block is present
-    # This manual override is only needed if auto-configuration fails
-    dynamic "environment_variable" {
-      for_each = var.enable_docker_server && var.docker_server_host != "" ? [1] : []
-      content {
-        name  = "DOCKER_HOST"
-        value = "tcp://${var.docker_server_host}:${var.docker_server_port}"
-      }
-    }
-
-    # Fleet configuration for Docker Server mode (must be inside environment block)
-    dynamic "fleet" {
-      for_each = var.enable_docker_server ? [1] : []
-      content {
-        fleet_arn = aws_codebuild_fleet.docker_server[0].arn
-      }
     }
   }
 
@@ -473,14 +381,15 @@ resource "aws_codebuild_project" "runner" {
     }
   }
 
-  # VPC config only when NOT using Docker Server fleet (reserved capacity)
-  # When using fleet, VPC must be configured on the fleet only, not the project
+  # VPC configuration
   dynamic "vpc_config" {
-    for_each = var.enable_vpc && var.vpc_config != null && !var.enable_docker_server ? [var.vpc_config] : []
+    for_each = var.enable_vpc && var.vpc_config != null ? [var.vpc_config] : []
     content {
-      vpc_id             = vpc_config.value.vpc_id
-      subnets            = vpc_config.value.subnet_ids
-      security_group_ids = var.managed_security_groups ? [aws_security_group.codebuild_project_managed[0].id] : vpc_config.value.security_group_ids
+      vpc_id  = vpc_config.value.vpc_id
+      subnets = vpc_config.value.subnet_ids
+      security_group_ids = var.managed_security_groups ? [aws_security_group.codebuild_managed[0].id] : (
+        length(vpc_config.value.security_group_ids) > 0 ? vpc_config.value.security_group_ids : [aws_security_group.codebuild_default[0].id]
+      )
     }
   }
 

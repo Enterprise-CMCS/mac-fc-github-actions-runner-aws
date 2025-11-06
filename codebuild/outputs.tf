@@ -47,7 +47,7 @@ output "service_role_arn" {
 
 output "codebuild_security_group_id" {
   description = "CodeBuild project security group ID (use this to allow access to Redshift/RDS/ElastiCache/etc)"
-  value       = var.enable_vpc && var.vpc_config != null && var.managed_security_groups ? aws_security_group.codebuild_project_managed[0].id : null
+  value       = var.enable_vpc && var.vpc_config != null && var.managed_security_groups ? aws_security_group.codebuild_managed[0].id : null
 }
 
 output "cache_bucket" {
@@ -55,53 +55,9 @@ output "cache_bucket" {
   value       = var.cache_type == "S3" ? aws_s3_bucket.cache[0].id : null
 }
 
-output "docker_server_enabled" {
-  description = "Whether Docker Server mode is enabled"
-  value       = var.enable_docker_server
-}
-
-output "docker_server_fleet_arn" {
-  description = "Docker Server fleet ARN (if enabled)"
-  value       = var.enable_docker_server ? aws_codebuild_fleet.docker_server[0].arn : null
-}
-
-output "docker_server_fleet_name" {
-  description = "Docker Server fleet name (if enabled)"
-  value       = var.enable_docker_server ? aws_codebuild_fleet.docker_server[0].name : null
-}
-
-output "docker_server_security_group_id" {
-  description = "Docker Server fleet security group ID (auto-created if not provided)"
-  value = var.enable_docker_server && var.enable_vpc && var.vpc_config != null ? (
-    var.managed_security_groups ? aws_security_group.docker_server_managed[0].id : (
-      length(var.vpc_config.security_group_ids) > 0 ? var.vpc_config.security_group_ids[0] : aws_security_group.docker_server_default[0].id
-    )
-  ) : null
-}
-
-output "docker_server_capacity_mode" {
-  description = "Docker Server fleet capacity mode"
-  value = var.enable_docker_server ? (
-    var.docker_server_capacity == 1 && var.docker_server_overflow_behavior == "ON_DEMAND" ? "Minimum Reserved + On-Demand Overflow (most cost-effective)" :
-    var.docker_server_overflow_behavior == "QUEUE" ? "Reserved Only (${var.docker_server_capacity} instances)" :
-    var.docker_server_overflow_behavior == "ON_DEMAND" ? "Reserved + On-Demand Overflow (${var.docker_server_capacity} base instances)" :
-    "Custom"
-  ) : null
-}
-
-output "docker_server_base_capacity" {
-  description = "Docker Server fleet reserved base capacity"
-  value       = var.enable_docker_server ? var.docker_server_capacity : null
-}
-
-output "docker_server_overflow_behavior" {
-  description = "Docker Server fleet overflow behavior"
-  value       = var.enable_docker_server ? var.docker_server_overflow_behavior : null
-}
-
 output "privileged_mode" {
-  description = "Whether privileged mode is enabled (DinD without Docker Server)"
-  value       = var.enable_docker && !var.enable_docker_server
+  description = "Whether privileged mode is enabled for Docker-in-Docker"
+  value       = var.enable_docker
 }
 
 output "github_repository_url" {
