@@ -115,10 +115,10 @@ Follow Steps 4-5 from above to enable webhook and use in workflows.
 See [codebuild/README.md](./codebuild/README.md) for:
 - Detailed configuration options
 - VPC configuration
-- Docker options
+- Docker support (privileged mode)
 - Advanced examples
 - Troubleshooting
 
 ## ECS [DEPRECATED]
 
-The ECS-based runner is deprecated. See [github-actions-runner-terraform/README.md](./github-actions-runner-terraform/README.md) for legacy documentation.
+The ECS-based runner is deprecated. See [Usage.md](./Usage.md) for legacy documentation.

@@ -1,6 +1,5 @@
 # terraform-aws-codebuild-github-runner
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Terraform](https://img.shields.io/badge/terraform-≥%201.0-623CE4.svg?style=flat)](https://www.terraform.io)
 
 A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBuild. Run your GitHub Actions workflows on AWS infrastructure with full control and cost savings.
@@ -14,6 +13,7 @@ A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBu
 - **AWS Native**: Direct IAM role integration for AWS services
 - **Secure**: Ephemeral runners with no persistent state
 - **Simple**: Just 3 required variables to get started
+ - **Docker Support**: Docker-in-Docker via CodeBuild privileged mode (Docker Fleet not supported)
 
 ## Architecture
 
@@ -154,7 +154,7 @@ Choose your authentication method below:
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.4.0"
 
   # GitHub App authentication (module creates the connection!)
   auth_method            = "github_app"
@@ -187,7 +187,7 @@ If you already have an authorized CodeConnections connection:
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
 
   # Use existing connection
   auth_method           = "github_app"
@@ -231,11 +231,11 @@ aws secretsmanager put-secret-value \
 ### Step 3: update terraform.tfvars
 
 ```bash
-cd test-module
+cd examples/basic
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Update owner, repo, project name, environment and tags
+Update owner, repo, project name, environment and tags.
 
 
 ### Step 4: Deploy
@@ -248,93 +248,33 @@ terraform apply
 
 ### Step 5: Test self-hosted runner with a workflow file
 
-Create a test github workflow file to test your self hosted runner. You can use the sample test-new-runner.yml file in the test-module directory.
-
-NOTE: Don't forget to update your runs-on: with the output label i.e. codebuild-demo-runner-dev-runner-${github.run_id}-${github.run_attempt}
+Create a minimal GitHub workflow to validate the runner. Use the label printed by Terraform output `runner_label` (example pattern: `codebuild-<project>-<env>-runner-${{ github.run_id }}-${{ github.run_attempt }}`).
 
 ```
-name: Test New CodeBuild Runner
+name: Test CodeBuild Runner
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - *
-    paths:
-      - 'test-module/**'
-      - 'terraform-aws-codebuild-github-runner/**'
-
-permissions:
-  contents: read
-  id-token: write
 
 jobs:
   test-runner:
-    name: Test New Runner
-    runs-on: codebuild-demo-runner-dev-runner-${github.run_id}-${github.run_attempt}
-
+    name: Test Runner
+    runs-on: codebuild-demo-dev-runner-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Test AWS Credentials
+      - name: Show environment
         run: |
-          echo "Testing AWS credentials..."
-          aws sts get-caller-identity
-
-      - name: Test Environment
-        run: |
-          echo "Testing runner environment..."
           echo "Runner: ${{ runner.name }}"
           echo "OS: ${{ runner.os }}"
-          echo "Architecture: ${{ runner.arch }}"
-          echo "Working Directory: $(pwd)"
-          echo "User: $(whoami)"
+          echo "Arch: ${{ runner.arch }}"
+          pwd && whoami
 
-      - name: Test Docker
-        run: |
-          echo "Testing Docker availability..."
-          docker --version
-          docker ps
+      - name: Check AWS identity
+        run: aws sts get-caller-identity
 
-      - name: Test AWS CLI
-        run: |
-          echo "AWS CLI Version:"
-          aws --version
-          echo ""
-          echo "AWS Region:"
-          echo $AWS_REGION
-          echo ""
-          echo "Caller Identity:"
-          aws sts get-caller-identity --output json
-
-      - name: Test Terraform
-        run: |
-          echo "Testing Terraform..."
-          terraform version
-
-      - name: Simple Build Test
-        run: |
-          echo "Running simple build test..."
-          cd test-module
-          echo "test" > test-file.txt
-          cat test-file.txt
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "## 🎉 Test Runner Validation Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Runner:** \`${{ runner.name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Run ID:** \`${{ github.run_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Run Attempt:** \`${{ github.run_attempt }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ Capabilities Verified:" >> $GITHUB_STEP_SUMMARY
-          echo "- AWS credentials via IAM role" >> $GITHUB_STEP_SUMMARY
-          echo "- Docker support" >> $GITHUB_STEP_SUMMARY
-          echo "- Terraform CLI" >> $GITHUB_STEP_SUMMARY
-          echo "- Basic file operations" >> $GITHUB_STEP_SUMMARY
+      - name: Optional: check Docker (enable_docker must be true)
+        run: docker --version || true
 ```
 
 
@@ -435,13 +375,6 @@ vpc_config = {
 
 ## Compute Types
 
-## Security Options
-
-- CloudWatch Logs KMS: set `cloudwatch_kms_key_arn` to encrypt log events with your KMS key.
-- S3 TLS-only access: enforced by default via bucket policy when `cache_type = "S3"`.
-- S3 encryption: `s3_cache_sse_mode` defaults to `SSE_S3`; set to `SSE_KMS` and optionally supply `s3_cache_kms_key_arn` to use a customer-managed key.
-- Managed Security Groups: set `managed_security_groups = true` (with `enable_vpc = true`) to auto-create security groups for the CodeBuild project.
-
 | Type | vCPUs | Memory | Cost/min |
 |------|-------|--------|----------|
 | `BUILD_GENERAL1_SMALL` | 2 | 3 GB | $0.003 |
@@ -449,6 +382,13 @@ vpc_config = {
 | `BUILD_GENERAL1_LARGE` | 8 | 15 GB | $0.010 |
 | `BUILD_GENERAL1_XLARGE` | 36 | 72 GB | $0.034 |
 | `BUILD_GENERAL1_2XLARGE` | 72 | 144 GB | $0.068 |
+
+## Security Options
+
+- CloudWatch Logs KMS: set `cloudwatch_kms_key_arn` to encrypt log events with your KMS key.
+- S3 TLS-only access: enforced by default via bucket policy when `cache_type = "S3"`.
+- S3 encryption: `s3_cache_sse_mode` defaults to `SSE_S3`; set to `SSE_KMS` and optionally supply `s3_cache_kms_key_arn` to use a customer-managed key.
+- Managed Security Groups: set `managed_security_groups = true` (with `enable_vpc = true`) to auto-create security groups for the CodeBuild project.
 
 ## Cost Comparison
 
@@ -491,7 +431,7 @@ vpc_config = {
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/terraform-aws-codebuild-github-runner"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
 
   github_owner       = "my-org"
   github_repository  = "my-repo"
