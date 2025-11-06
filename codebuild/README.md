@@ -154,7 +154,7 @@ Choose your authentication method below:
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v1.4.0"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
 
   # GitHub App authentication (module creates the connection!)
   auth_method            = "github_app"
