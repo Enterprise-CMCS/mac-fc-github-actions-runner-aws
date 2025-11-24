@@ -7,6 +7,8 @@ CVE-2023-5217
 
 CVE-2024-21538
 CVE-2025-64118
+CVE-2025-64756
+CVE-2025-5889
 
 # accept the risk of internal dotnet-core dependencies for the runner
 
