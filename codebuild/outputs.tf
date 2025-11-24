@@ -60,6 +60,16 @@ output "privileged_mode" {
   value       = var.enable_docker
 }
 
+output "docker_mode" {
+  description = "Docker mode in use: dind, server, or none"
+  value       = var.enable_docker_server ? "server" : (var.enable_docker ? "dind" : "none")
+}
+
+output "docker_server_fleet_arn" {
+  description = "Docker Server fleet ARN (if Docker Server is enabled)"
+  value       = var.enable_docker_server ? aws_codebuild_fleet.docker_server[0].arn : null
+}
+
 output "github_repository_url" {
   description = "GitHub repository URL"
   value       = "https://github.com/${var.github_owner}/${var.github_repository}"

@@ -224,3 +224,68 @@ resource "aws_iam_role_policy" "codebuild_codeconnections" {
     }]
   })
 }
+
+# ============================================================================
+# Docker Server Fleet IAM Role
+# ============================================================================
+
+# Fleet Service Role for VPC-connected Docker Server
+resource "aws_iam_role" "fleet" {
+  count = var.enable_docker_server && var.enable_vpc ? 1 : 0
+  name  = "${local.resource_prefix}-fleet-service-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "codebuild.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = local.default_tags
+}
+
+# Fleet VPC Policy - Required for fleet to manage network interfaces in VPC
+resource "aws_iam_role_policy" "fleet_vpc" {
+  count = var.enable_docker_server && var.enable_vpc ? 1 : 0
+  name  = "${local.resource_prefix}-fleet-vpc-policy"
+  role  = aws_iam_role.fleet[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateNetworkInterface",
+          "ec2:CreateNetworkInterfacePermission",
+          "ec2:DescribeDhcpOptions",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeVpcs",
+          "ec2:ModifyNetworkInterfaceAttribute"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateNetworkInterfacePermission"
+        ]
+        Resource = "arn:aws:ec2:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:network-interface/*"
+        Condition = {
+          StringEquals = {
+            "ec2:Subnet" = var.vpc_config != null ? var.vpc_config.subnet_ids : []
+          }
+        }
+      }
+    ]
+  })
+}
