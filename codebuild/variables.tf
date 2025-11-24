@@ -102,6 +102,55 @@ variable "enable_docker" {
   default     = true
 }
 
+variable "enable_docker_server" {
+  description = "Enable Docker Server mode (alternative to privileged DinD). Requires standard:7.0+ image. Provides managed Docker daemon without privileged mode. Cannot be used with enable_docker=true."
+  type        = bool
+  default     = false
+}
+
+variable "docker_server_capacity" {
+  description = "Base capacity for Docker server fleet (number of Docker daemon instances). Only used when enable_docker_server = true."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.docker_server_capacity >= 1 && var.docker_server_capacity <= 100
+    error_message = "Docker server capacity must be between 1 and 100."
+  }
+}
+
+variable "docker_server_compute_type" {
+  description = "Compute type for Docker server fleet. Only used when enable_docker_server = true."
+  type        = string
+  default     = "BUILD_GENERAL1_SMALL"
+
+  validation {
+    condition = contains([
+      "BUILD_GENERAL1_SMALL",
+      "BUILD_GENERAL1_MEDIUM",
+      "BUILD_GENERAL1_LARGE"
+    ], var.docker_server_compute_type)
+    error_message = "Invalid Docker server compute type. Must be BUILD_GENERAL1_SMALL, MEDIUM, or LARGE."
+  }
+}
+
+variable "docker_server_overflow_behavior" {
+  description = "Fleet overflow behavior (DEPRECATED - ignored). LINUX_EC2 fleets only support QUEUE overflow. Increase docker_server_capacity for concurrent builds."
+  type        = string
+  default     = "QUEUE"
+
+  validation {
+    condition     = contains(["QUEUE", "ON_DEMAND"], var.docker_server_overflow_behavior)
+    error_message = "Overflow behavior must be either QUEUE or ON_DEMAND."
+  }
+}
+
+variable "docker_server_subnet_id" {
+  description = "Single subnet ID for Docker Server fleet. AWS CodeBuild Fleet supports only ONE subnet. If not specified, uses the first subnet from vpc_config.subnet_ids. Only used when enable_docker_server = true."
+  type        = string
+  default     = ""
+}
+
 variable "enable_vpc" {
   description = "Whether to create and use VPC"
   type        = bool

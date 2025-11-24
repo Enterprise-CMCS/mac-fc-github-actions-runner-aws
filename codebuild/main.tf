@@ -265,6 +265,19 @@ resource "aws_security_group" "codebuild_managed" {
   tags = merge(local.default_tags, { Name = "${local.resource_prefix}-codebuild-managed-sg" })
 }
 
+# Security group rule for Docker Server communication on port 9876
+resource "aws_security_group_rule" "docker_server_ingress" {
+  count = var.enable_vpc && var.vpc_config != null && var.managed_security_groups && var.enable_docker_server ? 1 : 0
+
+  type              = "ingress"
+  from_port         = 9876
+  to_port           = 9876
+  protocol          = "tcp"
+  self              = true
+  security_group_id = aws_security_group.codebuild_managed[0].id
+  description       = "Allow Docker Server communication on port 9876"
+}
+
 # Import GitHub credentials at account level (PAT method)
 resource "null_resource" "import_credentials_pat" {
   count = var.auth_method == "pat" ? 1 : 0
@@ -313,6 +326,56 @@ resource "null_resource" "import_credentials_github_app" {
   depends_on = [aws_codeconnections_connection.github]
 }
 
+# ============================================================================
+# Docker Server Fleet (Optional)
+# ============================================================================
+
+# CodeBuild Fleet for Docker Server mode (alternative to privileged DinD)
+resource "aws_codebuild_fleet" "docker_server" {
+  count = var.enable_docker_server ? 1 : 0
+
+  base_capacity = var.docker_server_capacity
+  compute_type  = var.docker_server_compute_type
+
+  # LINUX_EC2 required for Docker Server mode
+  environment_type = "LINUX_EC2"
+
+  name = "${local.resource_prefix}-docker-server"
+
+  # LINUX_EC2 fleets only support QUEUE overflow behavior
+  overflow_behavior = "QUEUE"
+
+  # Fleet service role required when using VPC
+  fleet_service_role = var.enable_vpc && var.vpc_config != null ? aws_iam_role.fleet[0].arn : null
+
+  # VPC configuration for fleet (not project when using fleet)
+  dynamic "vpc_config" {
+    for_each = var.enable_vpc && var.vpc_config != null ? [1] : []
+    content {
+      vpc_id = var.vpc_config.vpc_id
+
+      # Fleet supports only ONE subnet (use first from list or override with docker_server_subnet_id)
+      subnets = [
+        var.docker_server_subnet_id != "" ? var.docker_server_subnet_id : var.vpc_config.subnet_ids[0]
+      ]
+
+      security_group_ids = var.managed_security_groups ? [
+        aws_security_group.codebuild_managed[0].id
+        ] : (
+        length(var.vpc_config.security_group_ids) > 0 ? var.vpc_config.security_group_ids : [
+          aws_security_group.codebuild_default[0].id
+        ]
+      )
+    }
+  }
+
+  tags = local.default_tags
+}
+
+# ============================================================================
+# CodeBuild Project
+# ============================================================================
+
 # CodeBuild Project
 resource "aws_codebuild_project" "runner" {
   name                   = "${local.resource_prefix}-runner"
@@ -351,6 +414,14 @@ resource "aws_codebuild_project" "runner" {
       name  = "ENVIRONMENT"
       value = var.environment
     }
+
+    # Docker Server fleet configuration
+    dynamic "fleet" {
+      for_each = var.enable_docker_server ? [1] : []
+      content {
+        fleet_arn = aws_codebuild_fleet.docker_server[0].arn
+      }
+    }
   }
 
   source {
@@ -381,9 +452,9 @@ resource "aws_codebuild_project" "runner" {
     }
   }
 
-  # VPC configuration
+  # VPC configuration (only when NOT using Docker Server - fleet handles VPC in that case)
   dynamic "vpc_config" {
-    for_each = var.enable_vpc && var.vpc_config != null ? [var.vpc_config] : []
+    for_each = var.enable_vpc && var.vpc_config != null && !var.enable_docker_server ? [var.vpc_config] : []
     content {
       vpc_id  = vpc_config.value.vpc_id
       subnets = vpc_config.value.subnet_ids

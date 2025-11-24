@@ -13,7 +13,7 @@ A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBu
 - **AWS Native**: Direct IAM role integration for AWS services
 - **Secure**: Ephemeral runners with no persistent state
 - **Simple**: Just 3 required variables to get started
-- **Docker Support**: Docker-in-Docker via CodeBuild privileged mode
+- **Docker Support**: Docker-in-Docker (privileged mode) or Docker Server (managed fleet)
 
 ## Architecture
 
@@ -338,9 +338,54 @@ jobs:
 
 | Variable | Description | Type | Default | Notes |
 |----------|-------------|------|---------|-------|
-| `enable_docker` | Enable Docker-in-Docker (privileged mode) | `bool` | `true` | Enables Docker support for builds |
+| `enable_docker` | Enable Docker-in-Docker (privileged mode) | `bool` | `true` | Traditional Docker support, uses privileged mode |
+| `enable_docker_server` | Enable Docker Server mode (alternative to DinD) | `bool` | `false` | Uses LINUX_EC2 fleet, no privileged mode required. Cannot be used with `enable_docker=true` |
+| `docker_server_capacity` | Base capacity for Docker server fleet | `number` | `1` | Number of Docker daemon instances (1-100). Only used when `enable_docker_server=true` |
+| `docker_server_compute_type` | Compute type for Docker server fleet | `string` | `"BUILD_GENERAL1_SMALL"` | SMALL, MEDIUM, or LARGE. Only used when `enable_docker_server=true` |
+| `docker_server_subnet_id` | Single subnet ID for Docker Server fleet | `string` | `""` | Fleet supports only ONE subnet. If empty, uses first subnet from `vpc_config.subnet_ids` |
+
+**Docker Modes:**
+
+- **Docker-in-Docker (DinD)**: Traditional approach using privileged mode. Simpler setup, runs directly on project instance.
+- **Docker Server**: Managed LINUX_EC2 fleet providing Docker daemon. No privileged mode required, better for VPC environments. Requires `build_image = "aws/codebuild/standard:7.0"` or later.
 
 **Security Note:** CodeBuild provides VM-level isolation. Each build runs on single-tenant EC2 instances. See [AWS Security Documentation](https://docs.aws.amazon.com/codebuild/latest/userguide/security.html) for details.
+
+#### Docker Server Example
+
+To use Docker Server mode instead of traditional Docker-in-Docker:
+
+```hcl
+module "github_runner" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.1.0"
+
+  # Authentication
+  auth_method            = "github_app"
+  github_connection_name = "my-connection"
+
+  # Repository
+  github_owner      = "your-org"
+  github_repository = "your-repo"
+  project_name      = "my-project"
+
+  # Docker Server Configuration
+  build_image          = "aws/codebuild/standard:7.0"  # Required: 7.0+
+  enable_docker        = false                          # Disable DinD
+  enable_docker_server = true                           # Enable Docker Server
+
+  # Docker Server Fleet Settings
+  docker_server_capacity     = 1                        # Base capacity (always-on)
+  docker_server_compute_type = "BUILD_GENERAL1_SMALL"   # Fleet instance size
+
+  # VPC Configuration (required for Docker Server)
+  enable_vpc = true
+  vpc_config = {
+    vpc_id             = "vpc-xxxxx"
+    subnet_ids         = ["subnet-xxxxx", "subnet-yyyyy"]
+    security_group_ids = []  # Use managed security groups
+  }
+}
+```
 
 ### Network & Security
 
