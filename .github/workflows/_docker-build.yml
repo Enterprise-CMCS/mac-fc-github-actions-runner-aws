@@ -95,6 +95,13 @@ jobs:
           load: true # this loads the image to the current docker instance so it can be referenced by tag in the subsequent steps: https://docs.docker.com/engine/reference/commandline/buildx_build/#docker
           provenance: false # the default behavior adds an 'image index' which clutters up ECR, see https://github.com/docker/buildx/issues/1533
 
+      - name: Free up disk space for Trivy
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         env:
