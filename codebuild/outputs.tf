@@ -1,43 +1,26 @@
-output "project_name" {
-  description = "CodeBuild project name"
-  value       = aws_codebuild_project.runner.name
+output "project_names" {
+  description = "CodeBuild project names (map: repo-key => project-name)"
+  value       = { for k, v in aws_codebuild_project.runner : k => v.name }
 }
 
-output "project_arn" {
-  description = "CodeBuild project ARN"
-  value       = aws_codebuild_project.runner.arn
+output "project_arns" {
+  description = "CodeBuild project ARNs (map: repo-key => project-arn)"
+  value       = { for k, v in aws_codebuild_project.runner : k => v.arn }
 }
 
-output "runner_label" {
-  description = "Runner label to use in GitHub Actions workflows"
-  value       = "codebuild-${aws_codebuild_project.runner.name}-$${{github.run_id}}-$${{github.run_attempt}}"
+output "runner_labels" {
+  description = "Runner labels for GitHub Actions workflows (map: repo-key => runner-label)"
+  value       = { for k, v in aws_codebuild_project.runner : k => "codebuild-${v.name}-$${{github.run_id}}-$${{github.run_attempt}}" }
 }
 
-output "runner_label_template" {
-  description = "Runner label template with placeholders"
-  value       = "codebuild-${aws_codebuild_project.runner.name}-<RUN_ID>-<RUN_ATTEMPT>"
+output "log_groups" {
+  description = "CloudWatch log groups (map: repo-key => log-group-name)"
+  value       = { for k, v in aws_cloudwatch_log_group.runner : k => v.name }
 }
 
-output "webhook_url" {
-  description = "Webhook URL (null if webhook not created yet)"
-  value       = local.can_create_webhook ? aws_codebuild_webhook.runner[0].url : null
-  sensitive   = true
-}
-
-output "webhook_payload_url" {
-  description = "Webhook payload URL (null if webhook not created yet)"
-  value       = local.can_create_webhook ? aws_codebuild_webhook.runner[0].payload_url : null
-  sensitive   = true
-}
-
-output "webhook_created" {
-  description = "Whether webhook was created"
-  value       = local.can_create_webhook
-}
-
-output "log_group" {
-  description = "CloudWatch log group name"
-  value       = aws_cloudwatch_log_group.runner.name
+output "webhooks_created" {
+  description = "Webhooks created status (map: repo-key => webhook-created)"
+  value       = { for k, v in local.repos : k => !v.skip_webhook_creation }
 }
 
 output "service_role_arn" {
@@ -55,24 +38,19 @@ output "cache_bucket" {
   value       = var.cache_type == "S3" ? aws_s3_bucket.cache[0].id : null
 }
 
-output "privileged_mode" {
-  description = "Whether privileged mode is enabled for Docker-in-Docker"
-  value       = var.enable_docker
-}
-
-output "docker_mode" {
-  description = "Docker mode in use: dind, server, or none"
-  value       = var.enable_docker_server ? "server" : (var.enable_docker ? "dind" : "none")
+output "docker_modes" {
+  description = "Docker mode per repo (map: repo-key => docker-mode)"
+  value       = { for k, v in local.repos : k => v.enable_docker_server ? "server" : "none" }
 }
 
 output "docker_server_fleet_arn" {
-  description = "Docker Server fleet ARN (if Docker Server is enabled)"
-  value       = var.enable_docker_server ? aws_codebuild_fleet.docker_server[0].arn : null
+  description = "Docker Server fleet ARN (shared across repos that use Docker Server)"
+  value       = local.need_docker_fleet ? aws_codebuild_fleet.docker_server[0].arn : null
 }
 
-output "github_repository_url" {
-  description = "GitHub repository URL"
-  value       = "https://github.com/${var.github_owner}/${var.github_repository}"
+output "github_repository_urls" {
+  description = "GitHub repository URLs (map: repo-key => repo-url)"
+  value       = { for k, v in local.repos : k => "https://github.com/${var.github_owner}/${v.github_repository}" }
 }
 
 output "auth_method" {
@@ -96,6 +74,10 @@ output "setup_complete" {
 }
 
 locals {
+  webhooks_status = alltrue([for k, v in local.repos : !v.skip_webhook_creation]) ? "all created" : (
+    anytrue([for k, v in local.repos : !v.skip_webhook_creation]) ? "partially created" : "all skipped"
+  )
+
   setup_instructions = var.auth_method == "github_app" ? (
     var.github_connection_name != "" ? join("", [
       "✅ GitHub App Authentication Configured\n\n",
@@ -109,12 +91,11 @@ locals {
       "3. Click \"Update pending connection\"\n",
       "4. Sign in to GitHub and select your GitHub App\n",
       "5. Connection status will change from PENDING → AVAILABLE\n",
-      var.skip_webhook_creation ?
-      "6. Set skip_webhook_creation = false in your config\n" :
-      "6. Webhook already created ✅\n",
-      var.skip_webhook_creation ?
-      "7. Run 'terraform apply' again to create the webhook\n\n" :
-      "\n",
+      local.webhooks_status == "all created" ? "6. Webhooks already created ✅\n\n" : (
+        local.webhooks_status == "all skipped" ?
+        "6. Set skip_webhook_creation = false for repos in your config\n7. Run 'terraform apply' again to create webhooks\n\n" :
+        "6. Some webhooks created, check webhooks_created output\n\n"
+      ),
       "Once authorized, CodeBuild can automatically use GitHub App tokens.\n\n",
       "Security benefits:\n",
       "- ✅ 1-hour token lifetime (vs 7-90 days for PAT)\n",
@@ -134,24 +115,24 @@ locals {
     ])
     ) : (
     # PAT authentication
-    var.skip_webhook_creation ? join("", [
+    local.webhooks_status == "all skipped" ? join("", [
       "⚠️  Webhook Creation Skipped\n\n",
       "Secret: ${var.github_secret_name}\n",
-      "Webhook: Skipped (skip_webhook_creation = true)\n\n",
+      "Webhooks: Skipped (skip_webhook_creation = true)\n\n",
       "📋 To complete setup:\n\n",
       "1. Ensure secret contains valid GitHub Personal Access Token:\n\n",
       "   aws secretsmanager put-secret-value \\\n",
       "     --secret-id ${var.github_secret_name} \\\n",
       "     --secret-string 'ghp_your_token_here'\n\n",
-      "2. Set skip_webhook_creation = false\n\n",
-      "3. Run 'terraform apply' to create the webhook\n\n",
+      "2. Set skip_webhook_creation = false for repos\n\n",
+      "3. Run 'terraform apply' to create webhooks\n\n",
       "Token Requirements:\n",
       "- Classic PAT: 'repo' and 'admin:repo_hook' scopes\n",
       "- Fine-grained PAT: 'Actions: read+write' and 'Metadata: read'\n"
       ]) : join("", [
       "✅ Personal Access Token Authentication Configured\n\n",
       "Secret: ${var.github_secret_name}\n",
-      "Webhook: ✅ Created\n",
+      "Webhooks: ${local.webhooks_status}\n",
       "Status: Ready to use!\n\n",
       "💡 For production, consider GitHub App authentication:\n",
       "- Set auth_method = \"github_app\"\n",
@@ -167,17 +148,19 @@ output "usage_instructions" {
     GitHub Actions Workflow Usage:
     ==============================
 
-    Add this to your workflow file:
+    Add this to your workflow file (.github/workflows/*.yml):
 
     jobs:
       my-job:
-        runs-on: ${local.resource_prefix}-runner-$${{github.run_id}}-$${{github.run_attempt}}
+        runs-on: codebuild-<PROJECT_NAME>-$${{github.run_id}}-$${{github.run_attempt}}
         steps:
           - uses: actions/checkout@v4
           - run: echo "Running on CodeBuild!"
 
-    Or use the full label:
+    Replace <PROJECT_NAME> with your CodeBuild project name.
+    Check the 'project_names' output for exact project names.
 
-    runs-on: codebuild-${aws_codebuild_project.runner.name}-$${{github.run_id}}-$${{github.run_attempt}}
+    Example for multi-repo setup:
+    - repo "mac-fc-embedded" → runs-on: codebuild-test-runner-github-app-dev-runner-$${{github.run_id}}-$${{github.run_attempt}}
   EOT
 }

@@ -14,6 +14,7 @@ A Terraform module to create self-hosted GitHub Actions runners using AWS CodeBu
 - **Secure**: Ephemeral runners with no persistent state
 - **Simple**: Just 3 required variables to get started
 - **Docker Support**: Docker-in-Docker (privileged mode) or Docker Server (managed fleet)
+- **Multi-Repository**: Deploy runners for multiple repos with shared infrastructure
 
 ## Architecture
 
@@ -296,8 +297,31 @@ jobs:
 | Variable | Description | Type | Validation |
 |----------|-------------|------|------------|
 | `github_owner` | GitHub organization or username that owns the repository | `string` | N/A |
-| `github_repository` | GitHub repository name where the runner will be registered | `string` | N/A |
-| `project_name` | Name prefix for all AWS resources (used for naming consistency) | `string` | Must contain only lowercase letters, numbers, and hyphens |
+| `github_repository` | GitHub repository name where the runner will be registered | `string` | N/A (ignored if `repositories` provided) |
+| `project_name` | Name prefix for all AWS resources (used for naming consistency) | `string` | Must contain only lowercase letters, numbers, and hyphens (ignored if `repositories` provided) |
+
+### Multi-Repository Configuration
+
+| Variable | Description | Type | Default |
+|----------|-------------|------|---------|
+| `repositories` | Map of repositories to create runners for. Module creates shared S3, security group, and Docker fleet. | `map(object)` | `{}` |
+
+**repositories object structure:**
+
+```hcl
+repositories = {
+  "repo-key" = {
+    github_repository      = string                    # Required
+    project_name          = string                    # Required
+    compute_type          = optional(string)          # Default: BUILD_GENERAL1_MEDIUM
+    concurrent_build_limit = optional(number)          # Default: 20
+    skip_webhook_creation  = optional(bool)           # Default: true
+    enable_docker_server   = optional(bool)           # Default: false
+  }
+}
+```
+
+**Note:** `project_name` must contain only lowercase letters, numbers, and hyphens.
 
 ### Authentication Variables
 
@@ -387,6 +411,55 @@ module "github_runner" {
 }
 ```
 
+### Multi-Repository Deployment
+
+Deploy runners for multiple repositories with shared infrastructure:
+
+```hcl
+module "github_runners" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.2.0"
+
+  auth_method            = "github_app"
+  github_connection_name = "my-github-connection"
+  github_owner           = "your-org"
+  environment            = "prod"
+
+  repositories = {
+    "repo-1" = {
+      github_repository      = "repo-1"
+      project_name           = "repo1-runner"
+      compute_type           = "BUILD_GENERAL1_MEDIUM"
+      concurrent_build_limit = 20
+      skip_webhook_creation  = false
+      enable_docker_server   = true
+    }
+    "repo-2" = {
+      github_repository      = "repo-2"
+      project_name           = "repo2-runner"
+      skip_webhook_creation  = false
+      enable_docker_server   = true
+    }
+  }
+
+  # Shared fleet configuration
+  docker_server_capacity     = 2
+  docker_server_compute_type = "BUILD_GENERAL1_SMALL"
+
+  # Shared VPC
+  enable_vpc = true
+  vpc_config = {
+    vpc_id             = "vpc-xxxxx"
+    subnet_ids         = ["subnet-xxxxx"]
+    security_group_ids = []
+  }
+}
+```
+
+**Shared (1 total):** S3 bucket, security group, Docker fleet, IAM roles
+**Per-repo (N total):** CodeBuild project, log group, webhook
+
+Each repository uses its own runner label. Access via `runner_labels` output map.
+
 ### Network & Security
 
 | Variable | Description | Type | Default | Notes |
@@ -460,26 +533,25 @@ vpc_config = {
 
 | Output | Description | Type | Usage |
 |--------|-------------|------|-------|
-| `runner_label` | Complete runner label for GitHub Actions workflows | `string` | Use directly in `runs-on:` |
-| `project_name` | CodeBuild project name | `string` | For AWS CLI/API operations |
-| `project_arn` | CodeBuild project ARN | `string` | For IAM policies and references |
+| `runner_labels` | Runner labels for GitHub Actions workflows | `map(string)` | Multi-repo: map of repo-key => label. Single-repo: map with one entry |
+| `project_names` | CodeBuild project names | `map(string)` | Multi-repo: map of repo-key => name. Single-repo: map with one entry |
+| `project_arns` | CodeBuild project ARNs | `map(string)` | Multi-repo: map of repo-key => ARN. Single-repo: map with one entry |
 | `service_role_arn` | CodeBuild service role ARN | `string` | For additional policy attachments |
 
 ### Connectivity Outputs
 
 | Output | Description | Type | Sensitive | Usage |
 |--------|-------------|------|-----------|-------|
-| `webhook_url` | GitHub webhook URL | `string` | ✅ | GitHub webhook configuration |
-| `webhook_payload_url` | Webhook payload URL | `string` | ✅ | Debugging webhook issues |
-| `github_repository_url` | Full GitHub repository URL | `string` | ❌ | Documentation and linking |
+| `github_repository_urls` | Full GitHub repository URLs | `map(string)` | ❌ | Multi-repo: map of repo-key => URL. Single-repo: map with one entry |
 
 ### Infrastructure Outputs
 
 | Output | Description | Type | Usage |
 |--------|-------------|------|-------|
-| `log_group` | CloudWatch log group name | `string` | Log monitoring and debugging |
+| `log_groups` | CloudWatch log group names | `map(string)` | Multi-repo: map of repo-key => log-group. Single-repo: map with one entry |
 | `cache_bucket` | S3 cache bucket name (if enabled) | `string` | Cache management and policies |
 | `codebuild_security_group_id` | CodeBuild project security group ID | `string` | Grant CodeBuild access to RDS/Redshift/ElastiCache |
+| `webhooks_created` | Webhook creation status per repo | `map(bool)` | Multi-repo: map of repo-key => created. Single-repo: map with one entry |
 | `usage_instructions` | Formatted usage guide | `string` | Copy-paste workflow examples |
 
 ### Example Usage of Outputs
@@ -512,10 +584,15 @@ resource "aws_iam_role_policy" "additional_permissions" {
   })
 }
 
-# Output the runner label for workflows
-output "runner_label" {
-  description = "Use this label in your GitHub Actions workflows"
-  value       = module.github_runner.runner_label
+# Output runner labels (map for multi-repo)
+output "runner_labels" {
+  description = "Use these labels in your GitHub Actions workflows"
+  value       = module.github_runner.runner_labels
+}
+
+# Access specific repo label
+output "repo1_label" {
+  value = module.github_runner.runner_labels["repo-1"]
 }
 
 # Output instructions for team
