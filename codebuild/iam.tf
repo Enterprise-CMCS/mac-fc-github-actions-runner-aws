@@ -1,6 +1,6 @@
 # CodeBuild Service Role
 resource "aws_iam_role" "codebuild" {
-  name = "${local.resource_prefix}-codebuild-role"
+  name = "${local.shared_prefix}-codebuild-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -21,7 +21,7 @@ resource "aws_iam_role" "codebuild" {
 
 # CodeBuild Base Policy
 resource "aws_iam_role_policy" "codebuild" {
-  name = "${local.resource_prefix}-codebuild-policy"
+  name = "${local.shared_prefix}-codebuild-policy"
   role = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -34,10 +34,12 @@ resource "aws_iam_role_policy" "codebuild" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = [
-          aws_cloudwatch_log_group.runner.arn,
-          "${aws_cloudwatch_log_group.runner.arn}:*"
-        ]
+        Resource = flatten([
+          for lg in aws_cloudwatch_log_group.runner : [
+            lg.arn,
+            "${lg.arn}:*"
+          ]
+        ])
       },
       {
         Effect = "Allow"
@@ -56,7 +58,7 @@ resource "aws_iam_role_policy" "codebuild" {
 # S3 Cache Policy
 resource "aws_iam_role_policy" "codebuild_cache" {
   count = var.cache_type == "S3" ? 1 : 0
-  name  = "${local.resource_prefix}-codebuild-cache-policy"
+  name  = "${local.shared_prefix}-codebuild-cache-policy"
   role  = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -85,7 +87,7 @@ resource "aws_iam_role_policy" "codebuild_cache" {
 # VPC Policy
 resource "aws_iam_role_policy" "codebuild_vpc" {
   count = var.enable_vpc ? 1 : 0
-  name  = "${local.resource_prefix}-codebuild-vpc-policy"
+  name  = "${local.shared_prefix}-codebuild-vpc-policy"
   role  = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -126,7 +128,7 @@ resource "aws_iam_role_policy" "codebuild_vpc" {
 # Secrets Manager Policy
 resource "aws_iam_role_policy" "codebuild_secrets" {
   count = var.github_secret_name != "" ? 1 : 0
-  name  = "${local.resource_prefix}-codebuild-secrets-policy"
+  name  = "${local.shared_prefix}-codebuild-secrets-policy"
   role  = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -144,7 +146,7 @@ resource "aws_iam_role_policy" "codebuild_secrets" {
 # ECR Policy (for Docker images)
 resource "aws_iam_role_policy" "codebuild_ecr" {
   count = var.enable_docker ? 1 : 0
-  name  = "${local.resource_prefix}-codebuild-ecr-policy"
+  name  = "${local.shared_prefix}-codebuild-ecr-policy"
   role  = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -165,7 +167,7 @@ resource "aws_iam_role_policy" "codebuild_ecr" {
 # KMS policy for S3 cache when using SSE-KMS
 resource "aws_iam_role_policy" "codebuild_kms_s3_cache" {
   count = var.cache_type == "S3" && var.s3_cache_sse_mode == "SSE_KMS" ? 1 : 0
-  name  = "${local.resource_prefix}-codebuild-kms-s3-cache-policy"
+  name  = "${local.shared_prefix}-codebuild-kms-s3-cache-policy"
   role  = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -188,7 +190,7 @@ resource "aws_iam_role_policy" "codebuild_kms_s3_cache" {
 
 # Webhook Management Policy
 resource "aws_iam_role_policy" "codebuild_webhook" {
-  name = "${local.resource_prefix}-codebuild-webhook-policy"
+  name = "${local.shared_prefix}-codebuild-webhook-policy"
   role = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -200,7 +202,7 @@ resource "aws_iam_role_policy" "codebuild_webhook" {
         "codebuild:UpdateWebhook",
         "codebuild:DeleteWebhook"
       ]
-      Resource = aws_codebuild_project.runner.arn
+      Resource = [for proj in aws_codebuild_project.runner : proj.arn]
     }]
   })
 }
@@ -208,7 +210,7 @@ resource "aws_iam_role_policy" "codebuild_webhook" {
 # CodeConnections Policy (for GitHub App authentication)
 resource "aws_iam_role_policy" "codebuild_codeconnections" {
   count = var.auth_method == "github_app" ? 1 : 0
-  name  = "${local.resource_prefix}-codebuild-codeconnections-policy"
+  name  = "${local.shared_prefix}-codebuild-codeconnections-policy"
   role  = aws_iam_role.codebuild.id
 
   policy = jsonencode({
@@ -231,8 +233,8 @@ resource "aws_iam_role_policy" "codebuild_codeconnections" {
 
 # Fleet Service Role for VPC-connected Docker Server
 resource "aws_iam_role" "fleet" {
-  count = var.enable_docker_server && var.enable_vpc ? 1 : 0
-  name  = "${local.resource_prefix}-fleet-service-role"
+  count = local.need_docker_fleet && var.enable_vpc ? 1 : 0
+  name  = "${local.shared_prefix}-fleet-service-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -250,8 +252,8 @@ resource "aws_iam_role" "fleet" {
 
 # Fleet VPC Policy - Required for fleet to manage network interfaces in VPC
 resource "aws_iam_role_policy" "fleet_vpc" {
-  count = var.enable_docker_server && var.enable_vpc ? 1 : 0
-  name  = "${local.resource_prefix}-fleet-vpc-policy"
+  count = local.need_docker_fleet && var.enable_vpc ? 1 : 0
+  name  = "${local.shared_prefix}-fleet-vpc-policy"
   role  = aws_iam_role.fleet[0].id
 
   policy = jsonencode({

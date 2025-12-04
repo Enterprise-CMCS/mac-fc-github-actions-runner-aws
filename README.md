@@ -30,7 +30,7 @@ Create a CMS ticket to install and enable the GitHub App for your repository.
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.2.0"
 
   auth_method            = "github_app"
   github_connection_name = "my-github-connection"
@@ -77,6 +77,41 @@ jobs:
       - run: echo "Running on CodeBuild!"
 ```
 
+## Multi-Repository Deployment
+
+Deploy runners for multiple repositories sharing infrastructure:
+
+```hcl
+module "github_runners" {
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.2.0"
+
+  auth_method            = "github_app"
+  github_connection_name = "my-github-connection"
+  github_owner           = "your-org"
+  environment            = "dev"
+
+  repositories = {
+    "repo-1" = {
+      github_repository     = "repo-1"
+      project_name          = "repo1-runner"
+      skip_webhook_creation = false
+      enable_docker_server  = true
+    }
+    "repo-2" = {
+      github_repository     = "repo-2"
+      project_name          = "repo2-runner"
+      skip_webhook_creation = false
+      enable_docker_server  = true
+    }
+  }
+}
+```
+
+**Shared resources:** 1 S3 bucket, 1 security group, 1 Docker fleet
+**Per-repo resources:** CodeBuild project, log group, webhook
+
+See [codebuild/README.md](./codebuild/README.md) for full documentation.
+
 ## Alternative: Personal Access Token
 
 If GitHub App is not available, you can use a Personal Access Token.
@@ -97,7 +132,7 @@ aws secretsmanager create-secret \
 
 ```hcl
 module "github_runner" {
-  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.0.0"
+  source = "github.com/Enterprise-CMCS/mac-fc-github-actions-runner-aws//codebuild?ref=v7.2.0"
 
   auth_method        = "pat"
   github_secret_name = "github/actions/runner-token"

@@ -4,17 +4,34 @@ variable "github_owner" {
   type        = string
 }
 
+# Multi-repo mode: Use this to deploy runners for multiple repositories
+variable "repositories" {
+  description = "Map of repositories (key = repo-name, value = config). Leave empty for single-repo mode."
+  type = map(object({
+    github_repository      = string
+    project_name           = string
+    compute_type           = optional(string, "BUILD_GENERAL1_MEDIUM")
+    concurrent_build_limit = optional(number, 20)
+    skip_webhook_creation  = optional(bool, true)
+    enable_docker_server   = optional(bool, false)
+  }))
+  default = {}
+}
+
+# Single-repo mode: Use these when not using repositories map (legacy/backward compat)
 variable "github_repository" {
-  description = "GitHub repository name"
+  description = "GitHub repository name (ignored if repositories map is provided)"
   type        = string
+  default     = ""
 }
 
 variable "project_name" {
-  description = "Name prefix for all resources"
+  description = "Name prefix for all resources (ignored if repositories map is provided)"
   type        = string
+  default     = ""
 
   validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.project_name))
+    condition     = var.project_name == "" || can(regex("^[a-z0-9-]+$", var.project_name))
     error_message = "Project name must contain only lowercase letters, numbers, and hyphens."
   }
 }
@@ -97,7 +114,7 @@ variable "build_image" {
 }
 
 variable "enable_docker" {
-  description = "Enable Docker in Docker (privileged mode)"
+  description = "Enable Docker in Docker (privileged mode). In multi-repo mode, applies to all repos unless they set enable_docker_server=true."
   type        = bool
   default     = true
 }

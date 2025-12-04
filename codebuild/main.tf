@@ -1,5 +1,31 @@
 locals {
-  resource_prefix = "${var.project_name}-${var.environment}"
+  # Validation: ensure either repositories OR single-repo vars are provided
+  _ = length(var.repositories) > 0 || (var.github_repository != "" && var.project_name != "") ? null : file("ERROR: Either provide repositories map OR set github_repository and project_name for single-repo mode")
+
+  # Mode: multi-repo if repositories map provided, single-repo otherwise
+  is_multi_repo = length(var.repositories) > 0
+
+  # Normalize: convert single-repo vars to same format as multi-repo
+  repos = local.is_multi_repo ? var.repositories : {
+    "default" = {
+      github_repository      = var.github_repository
+      project_name           = var.project_name
+      compute_type           = var.compute_type
+      concurrent_build_limit = var.concurrent_build_limit
+      skip_webhook_creation  = var.skip_webhook_creation
+      enable_docker_server   = var.enable_docker_server
+    }
+  }
+
+  # Shared resource prefix (S3, SG, Fleet)
+  # Multi-repo: github_owner-environment, Single-repo: project_name-environment (backward compat)
+  shared_prefix = local.is_multi_repo ? "${var.github_owner}-${var.environment}" : "${var.project_name}-${var.environment}"
+
+  # S3 bucket prefix (lowercase, max 41 chars to allow for "-runner-cache-" + 8 char hex = 63 total)
+  s3_prefix = substr(lower(local.shared_prefix), 0, 41)
+
+  # Check if any repo needs Docker Server (for fleet creation)
+  need_docker_fleet = anytrue([for r in local.repos : r.enable_docker_server])
 
   # Get GitHub token from Secrets Manager or variable (for PAT auth only)
   github_token = var.auth_method == "pat" ? coalesce(
@@ -8,23 +34,15 @@ locals {
   ) : ""
 
   # Determine GitHub connection ARN (for GitHub App auth)
-  # Use provided ARN if available, otherwise use the created connection ARN
   github_connection_arn = var.auth_method == "github_app" ? (
     var.github_connection_arn != "" ? var.github_connection_arn : try(aws_codeconnections_connection.github[0].arn, "")
   ) : ""
-
-  # Determine if webhook can be created
-  # User controls via skip_webhook_creation flag
-  # For NEW GitHub App connections, user must set skip_webhook_creation = true initially,
-  # then set to false after authorizing the connection in AWS Console
-  can_create_webhook = !var.skip_webhook_creation
 
   default_tags = merge(
     var.tags,
     {
       Module      = "terraform-aws-codebuild-github-runner"
       Environment = var.environment
-      Project     = var.project_name
       ManagedBy   = "Terraform"
     }
   )
@@ -111,15 +129,15 @@ resource "random_id" "bucket_suffix" {
   depends_on = [null_resource.validate_secret]
 }
 
-# S3 bucket for cache
+# S3 bucket for cache (shared across all repos)
 resource "aws_s3_bucket" "cache" {
   count = var.cache_type == "S3" ? 1 : 0
 
-  bucket        = "${local.resource_prefix}-runner-cache-${random_id.bucket_suffix.hex}"
+  bucket        = "${local.s3_prefix}-runner-cache-${random_id.bucket_suffix.hex}"
   force_destroy = true
 
   tags = merge(local.default_tags, {
-    Name = "${local.resource_prefix}-runner-cache"
+    Name = "${local.shared_prefix}-runner-cache"
   })
 }
 
@@ -211,9 +229,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "cache" {
   }
 }
 
-# CloudWatch Log Group
+# CloudWatch Log Groups (one per repo)
 resource "aws_cloudwatch_log_group" "runner" {
-  name              = "/aws/codebuild/${local.resource_prefix}-runner"
+  for_each = local.repos
+
+  name              = "/aws/codebuild/${each.value.project_name}-${var.environment}-runner"
   retention_in_days = var.log_retention_days
   kms_key_id        = var.cloudwatch_kms_key_arn != "" ? var.cloudwatch_kms_key_arn : null
 
@@ -228,7 +248,7 @@ resource "aws_cloudwatch_log_group" "runner" {
 resource "aws_security_group" "codebuild_default" {
   count = var.enable_vpc && var.vpc_config != null && length(var.vpc_config.security_group_ids) == 0 && !var.managed_security_groups ? 1 : 0
 
-  name        = "${local.resource_prefix}-codebuild-default-sg"
+  name        = "${local.shared_prefix}-codebuild-default-sg"
   description = "Default security group for CodeBuild project"
   vpc_id      = var.vpc_config.vpc_id
 
@@ -242,7 +262,7 @@ resource "aws_security_group" "codebuild_default" {
   }
 
   tags = merge(local.default_tags, {
-    Name = "${local.resource_prefix}-codebuild-default-sg"
+    Name = "${local.shared_prefix}-codebuild-default-sg"
   })
 }
 
@@ -250,7 +270,7 @@ resource "aws_security_group" "codebuild_default" {
 # Provides egress-only access
 resource "aws_security_group" "codebuild_managed" {
   count       = var.enable_vpc && var.vpc_config != null && var.managed_security_groups ? 1 : 0
-  name        = "${local.resource_prefix}-codebuild-managed-sg"
+  name        = "${local.shared_prefix}-codebuild-managed-sg"
   description = "Managed security group for CodeBuild project"
   vpc_id      = var.vpc_config.vpc_id
 
@@ -262,12 +282,12 @@ resource "aws_security_group" "codebuild_managed" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(local.default_tags, { Name = "${local.resource_prefix}-codebuild-managed-sg" })
+  tags = merge(local.default_tags, { Name = "${local.shared_prefix}-codebuild-managed-sg" })
 }
 
-# Security group rule for Docker Server communication on port 9876
+# Security group rule for Docker Server communication on port 9876 (shared across all repos)
 resource "aws_security_group_rule" "docker_server_ingress" {
-  count = var.enable_vpc && var.vpc_config != null && var.managed_security_groups && var.enable_docker_server ? 1 : 0
+  count = var.enable_vpc && var.vpc_config != null && var.managed_security_groups && local.need_docker_fleet ? 1 : 0
 
   type              = "ingress"
   from_port         = 9876
@@ -330,9 +350,9 @@ resource "null_resource" "import_credentials_github_app" {
 # Docker Server Fleet (Optional)
 # ============================================================================
 
-# CodeBuild Fleet for Docker Server mode (alternative to privileged DinD)
+# CodeBuild Fleet for Docker Server mode (shared across all repos)
 resource "aws_codebuild_fleet" "docker_server" {
-  count = var.enable_docker_server ? 1 : 0
+  count = local.need_docker_fleet ? 1 : 0
 
   base_capacity = var.docker_server_capacity
   compute_type  = var.docker_server_compute_type
@@ -340,7 +360,7 @@ resource "aws_codebuild_fleet" "docker_server" {
   # LINUX_EC2 required for Docker Server mode
   environment_type = "LINUX_EC2"
 
-  name = "${local.resource_prefix}-docker-server"
+  name = "${local.shared_prefix}-docker-server"
 
   # LINUX_EC2 fleets only support QUEUE overflow behavior
   overflow_behavior = "QUEUE"
@@ -376,24 +396,26 @@ resource "aws_codebuild_fleet" "docker_server" {
 # CodeBuild Project
 # ============================================================================
 
-# CodeBuild Project
+# CodeBuild Projects (one per repo)
 resource "aws_codebuild_project" "runner" {
-  name                   = "${local.resource_prefix}-runner"
-  description            = "GitHub Actions runner for ${var.github_owner}/${var.github_repository}"
+  for_each = local.repos
+
+  name                   = "${each.value.project_name}-${var.environment}-runner"
+  description            = "GitHub Actions runner for ${var.github_owner}/${each.value.github_repository}"
   service_role           = aws_iam_role.codebuild.arn
-  concurrent_build_limit = var.concurrent_build_limit
+  concurrent_build_limit = each.value.concurrent_build_limit
 
   artifacts {
     type = "NO_ARTIFACTS"
   }
 
   environment {
-    compute_type                = var.compute_type
+    compute_type                = each.value.compute_type
     image                       = var.build_image
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
-    # Privileged mode required for Docker-in-Docker
-    privileged_mode = var.enable_docker
+    # Privileged mode: disabled when using Docker Server
+    privileged_mode = !each.value.enable_docker_server && var.enable_docker
 
     environment_variable {
       name  = "GITHUB_OWNER"
@@ -402,12 +424,12 @@ resource "aws_codebuild_project" "runner" {
 
     environment_variable {
       name  = "GITHUB_REPOSITORY"
-      value = var.github_repository
+      value = each.value.github_repository
     }
 
     environment_variable {
       name  = "PROJECT_NAME"
-      value = var.project_name
+      value = each.value.project_name
     }
 
     environment_variable {
@@ -415,9 +437,9 @@ resource "aws_codebuild_project" "runner" {
       value = var.environment
     }
 
-    # Docker Server fleet configuration
+    # Docker Server fleet configuration (shared fleet)
     dynamic "fleet" {
-      for_each = var.enable_docker_server ? [1] : []
+      for_each = each.value.enable_docker_server ? [1] : []
       content {
         fleet_arn = aws_codebuild_fleet.docker_server[0].arn
       }
@@ -426,7 +448,7 @@ resource "aws_codebuild_project" "runner" {
 
   source {
     type                = "GITHUB"
-    location            = "https://github.com/${var.github_owner}/${var.github_repository}.git"
+    location            = "https://github.com/${var.github_owner}/${each.value.github_repository}.git"
     git_clone_depth     = 1
     buildspec           = ""
     report_build_status = true
@@ -438,7 +460,7 @@ resource "aws_codebuild_project" "runner" {
 
   logs_config {
     cloudwatch_logs {
-      group_name = aws_cloudwatch_log_group.runner.name
+      group_name = aws_cloudwatch_log_group.runner[each.key].name
       status     = "ENABLED"
     }
   }
@@ -454,7 +476,7 @@ resource "aws_codebuild_project" "runner" {
 
   # VPC configuration (only when NOT using Docker Server - fleet handles VPC in that case)
   dynamic "vpc_config" {
-    for_each = var.enable_vpc && var.vpc_config != null && !var.enable_docker_server ? [var.vpc_config] : []
+    for_each = var.enable_vpc && var.vpc_config != null && !each.value.enable_docker_server ? [var.vpc_config] : []
     content {
       vpc_id  = vpc_config.value.vpc_id
       subnets = vpc_config.value.subnet_ids
@@ -472,12 +494,11 @@ resource "aws_codebuild_project" "runner" {
   ]
 }
 
-# Webhook for GitHub integration
-# Only created when we have valid GitHub credentials (not placeholder)
+# Webhooks for GitHub integration (one per repo, if not skipped)
 resource "aws_codebuild_webhook" "runner" {
-  count = local.can_create_webhook ? 1 : 0
+  for_each = { for k, v in local.repos : k => v if !v.skip_webhook_creation }
 
-  project_name = aws_codebuild_project.runner.name
+  project_name = aws_codebuild_project.runner[each.key].name
   build_type   = "BUILD"
 
   filter_group {
@@ -488,30 +509,4 @@ resource "aws_codebuild_webhook" "runner" {
   }
 }
 
-# Verify webhook configuration (only if webhook was created)
-resource "null_resource" "verify_webhook" {
-  count = local.can_create_webhook ? 1 : 0
-
-  triggers = {
-    webhook_id = aws_codebuild_webhook.runner[0].id
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      echo "Verifying webhook configuration..."
-      WEBHOOK_URL=$(aws codebuild batch-get-projects \
-        --names ${aws_codebuild_project.runner.name} \
-        --region ${data.aws_region.current.id} \
-        --query "projects[0].webhook.url" \
-        --output text 2>/dev/null || echo "")
-
-      if [ ! -z "$WEBHOOK_URL" ] && [ "$WEBHOOK_URL" != "None" ]; then
-        echo "✅ Webhook configured: $WEBHOOK_URL"
-      else
-        echo "⚠️  Warning: Webhook may not be properly configured"
-      fi
-    EOT
-  }
-
-  depends_on = [aws_codebuild_webhook.runner]
-}
+# Webhook verification removed - check webhooks_created output to see which repos have webhooks
