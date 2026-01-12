@@ -16,6 +16,11 @@ RUN \
 
 FROM mcr.microsoft.com/playwright:v1.56.1-noble
 
+# Update all packages to latest security patches
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
     && chown -R "runner":"runner" "/home/runner"
