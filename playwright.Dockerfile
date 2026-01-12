@@ -16,11 +16,6 @@ RUN \
 
 FROM mcr.microsoft.com/playwright:v1.56.1-noble
 
-# Update all packages to latest security patches
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
     && chown -R "runner":"runner" "/home/runner"
@@ -31,14 +26,15 @@ COPY --from=install ./runner /home/runner
 # install runner dependencies
 RUN /home/runner/bin/installdependencies.sh
 
-# install entrypoint.sh dependencies (separately since these change more often)
+# Update all packages to latest security patches and install entrypoint.sh dependencies
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get -qq -y install --no-install-recommends \
     curl \
     jq \
     uuid-runtime \
     unzip \
-    && rm -rf /var/lib/apt/lists
+    && rm -rf /var/lib/apt/lists/*
 
 # install awscli because the standard runner has it
 # per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
