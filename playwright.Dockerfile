@@ -26,7 +26,7 @@ COPY --from=install ./runner /home/runner
 # install runner dependencies
 RUN /home/runner/bin/installdependencies.sh
 
-# Update all packages to latest security patches and install entrypoint.sh dependencies
+# upgrade all packages to latest security patches and install entrypoint.sh dependencies
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get -qq -y install --no-install-recommends \
