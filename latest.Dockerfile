@@ -37,12 +37,22 @@ RUN /home/runner/bin/installdependencies.sh
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get -qq -y install --no-install-recommends \
+    ca-certificates \
     curl \
     jq \
     uuid-runtime \
     unzip \
     git \
-    && rm -rf /var/lib/apt/lists
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add PostgreSQL APT repository and install postgresql-client-16
+# Using "noble" (Ubuntu 24.04) repo since 25.10 may not be supported yet
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get -qq -y install --no-install-recommends postgresql-client-16 \
+    && rm -rf /var/lib/apt/lists/*
 
 # install awscli because the standard runner has it
 # per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
