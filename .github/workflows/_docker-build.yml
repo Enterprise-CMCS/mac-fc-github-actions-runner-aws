@@ -151,41 +151,9 @@ jobs:
           -e RUNNER_UUID=${{ needs.set-runner-uuid.outputs.runner-uuid }} \
           ${{ needs.build-and-test.outputs.image-tag-with-repo }}
 
-  wait-for-runner:
-    name: Wait for the runner to be ready
-    needs: [ set-runner-uuid, build-and-test ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Poll the GitHub Actions API until the runner is registered and online
-        run: |
-          response_file=$(mktemp)
-          until \
-            status=$(curl -s \
-              -H "Accept: application/vnd.github.v3+json" \
-              -u robot-mac-fc:${{ secrets.SERVICE_ACCOUNT_GITHUB_TOKEN }} \
-              -o $response_file \
-              -w "%{http_code}" \
-              --url https://api.github.com/repos/${{ github.repository }}/actions/runners
-            )
-
-            if [ $? -ne 0 ] || [ $status -ne 200 ]; then
-              echo "error getting runner status from GitHub"
-              echo "curl exited with code $?"
-              echo "response status: $status"
-              echo "response body: $(cat $response_file)"
-              exit 1
-            fi
-
-            cat $response_file | jq -e '.runners | .[] | select(.name == "${{ needs.set-runner-uuid.outputs.runner-uuid }}") | .status == "online"' >/dev/null
-          do
-            echo "Waiting for runner ${{ needs.set-runner-uuid.outputs.runner-uuid }} to be ready" && sleep 10
-          done
-          echo "Runner ${{ needs.set-runner-uuid.outputs.runner-uuid }} is ready"
-
   test-runner:
     name: Test the runner
-    needs: [ set-runner-uuid, wait-for-runner ]
+    needs: [ set-runner-uuid, build-and-test ]
     runs-on:
       - self-hosted
       - ${{ needs.set-runner-uuid.outputs.runner-uuid }}
