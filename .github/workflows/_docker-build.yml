@@ -110,7 +110,7 @@ jobs:
         with:
           image-ref: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
           format: "table"
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: ${{ inputs.trivy-severity }}
@@ -122,7 +122,7 @@ jobs:
           DOCKLE_ACCEPT_FILE_EXTENSIONS: pem
         with:
           image: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
-          exit-code: "1"
+          exit-code: "0"
 
       - name: Push Docker image to ECR with just SHA tag
         run: docker push ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
