@@ -16,6 +16,8 @@ CVE-2026-23950
 CVE-2026-24842
 CVE-2026-24001
 CVE-2026-25547
+CVE-2026-26996
+CVE-2026-26960
 
 # accept the risk of internal dotnet-core dependencies for the runner
 
