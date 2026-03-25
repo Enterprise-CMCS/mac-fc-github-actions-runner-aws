@@ -46,8 +46,7 @@
   },
   "tags": [
     "self-hosted-runner",
-    "github-actions-runner",
-    "playwright-runner"
+    "github-actions-runner"
   ],
   "contact": {
     "email": "cms-macfc@corbalt.com",
