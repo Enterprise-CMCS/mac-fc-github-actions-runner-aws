@@ -17,15 +17,3 @@ jobs:
     uses:
       ./.github/workflows/_docker-build.yml
     secrets: inherit
-
-  playwright:
-    name: Build and push 'playwright' image
-    uses:
-      ./.github/workflows/_docker-build.yml
-    with:
-      dockerfile: playwright.Dockerfile
-      trivyignore: .trivyignore-playwright
-      feature-branch-image-tag: playwright-v1.56.1
-      default-branch-image-tag: playwright-v1.56.1
-      trivy-severity: "CRITICAL,HIGH"
-    secrets: inherit
