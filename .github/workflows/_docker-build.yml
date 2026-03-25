@@ -105,6 +105,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         env:
+          # see https://trivy.dev/docs/latest/configuration/#environment-variables and https://trivy.dev/docs/latest/configuration/reporting/ for documentation of table mode env vars
           TRIVY_TABLE_MODE: detailed
         with:
           image-ref: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
