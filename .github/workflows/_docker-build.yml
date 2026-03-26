@@ -111,7 +111,6 @@ jobs:
           image-ref: ${{ steps.set-image-tag-with-repo.outputs.image-tag-with-repo }}
           format: "table"
           exit-code: "1"
-          ignore-unfixed: true
           vuln-type: "os,library"
           severity: ${{ inputs.trivy-severity }}
           trivyignores: ${{ inputs.trivyignore }}
