@@ -14,7 +14,7 @@ RUN \
     && mkdir runner \
     && tar xzf "actions-runner-linux-x64-${ACTIONS_VERSION}.tar.gz" --directory ./runner
 
-FROM ubuntu:25.10
+FROM ubuntu:26.04
 
 RUN groupadd "runner" && useradd -g "runner" --shell /bin/bash "runner" \
     && mkdir -p "/home/runner" \
@@ -59,6 +59,10 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmo
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
     && ./aws/install
+
+# Remove pebble (Ubuntu 26.04's init system) since the runner uses its own entrypoint.
+# This eliminates Go stdlib CVEs in the pebble binary that we can't patch ourselves.
+RUN rm -f /usr/bin/pebble
 
 # Remove setuid and setgid permissions after all package installations to address
 # https://github.com/goodwithtech/dockle/blob/master/CHECKPOINT.md#cis-di-0008
