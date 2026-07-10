@@ -11,17 +11,6 @@ repos:
     hooks:
       - id: markdownlint
 
-  - repo: https://github.com/pryorda/dockerfilelint-precommit-hooks
-    rev: v0.1.0
-    hooks:
-      - id: dockerfilelint
-        stages: [commit]
-
-  - repo: https://github.com/detailyang/pre-commit-shell
-    rev: 1.0.5
-    hooks:
-      - id: shell-lint
-
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.50.0
     hooks:
