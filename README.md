@@ -1,6 +1,6 @@
 # github-actions-runner-aws
 
-Terraform modules for creating self-hosted GitHub Actions runners on AWS.
+Terraform module for creating self-hosted GitHub Actions runners on AWS.
 
 ## CodeBuild (Recommended)
 
