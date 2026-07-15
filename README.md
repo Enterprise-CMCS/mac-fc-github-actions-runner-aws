@@ -1,6 +1,6 @@
 # github-actions-runner-aws
 
-Terraform modules for creating self-hosted GitHub Actions runners on AWS.
+Terraform module for creating self-hosted GitHub Actions runners on AWS.
 
 ## CodeBuild (Recommended)
 
@@ -155,7 +155,3 @@ See [codebuild/README.md](./codebuild/README.md) for:
 - Docker support (privileged mode)
 - Advanced examples
 - Troubleshooting
-
-## ECS [DEPRECATED]
-
-The ECS-based runner is deprecated. See [Usage.md](./Usage.md) for legacy documentation.

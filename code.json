@@ -1,7 +1,7 @@
 {
   "name": "mac-fc-github-actions-runner-aws",
-  "description": "This repository will house infrastructure related to standing up an internally hosted GitHub Actions Runner within an AWS environment",
-  "longDescription": "This repository contains Dockerfiles for self-hosted GitHub Actions runners and an associated Terraform module, which provisions an ECS cluster, service and task definition.",
+  "description": "Terraform module for creating self-hosted GitHub Actions runners with AWS CodeBuild",
+  "longDescription": "This repository contains a Terraform module that provisions AWS CodeBuild projects for self-hosted GitHub Actions runners.",
   "status": "Production",
   "permissions": {
     "licenses": [
