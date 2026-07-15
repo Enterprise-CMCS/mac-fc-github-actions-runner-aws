@@ -2,7 +2,7 @@
 
 Terraform module for creating self-hosted GitHub Actions runners on AWS.
 
-## CodeBuild (Recommended)
+## CodeBuild
 
 The `codebuild/` module uses AWS CodeBuild for serverless, zero-maintenance GitHub Actions runners.
 
