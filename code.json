@@ -1,6 +1,6 @@
 {
   "name": "mac-fc-github-actions-runner-aws",
-  "description": "Terraform module for creating self-hosted GitHub Actions runners with AWS CodeBuild",
+  "description": "This repository will house infrastructure related to standing up an internally hosted GitHub Actions Runner within an AWS environment",
   "longDescription": "This repository contains a Terraform module that provisions AWS CodeBuild projects for self-hosted GitHub Actions runners.",
   "status": "Production",
   "permissions": {
@@ -19,7 +19,7 @@
   "repositoryHost": "github.com/CMS-Enterprise",
   "repositoryVisibility": "public",
   "vcs": "git",
-  "laborHours": 4049,
+  "laborHours": 3139,
   "reuseFrequency": {
     "forks": 790
   },
@@ -32,17 +32,14 @@
   ],
   "softwareType": "standalone/backend",
   "languages": [
-    "HCL",
-    "Dockerfile",
-    "Shell",
-    "Smarty"
+    "HCL"
   ],
   "maintenance": "contract",
   "contractNumber": "47QTCA21D00AC",
   "date": {
     "created": "2021-06-11T18:35:45Z",
-    "lastModified": "2025-12-04T15:24:15Z",
-    "metaDataLastUpdated": "2026-01-01T00:39:14.329Z"
+    "lastModified": "2026-07-15T14:09:22Z",
+    "metaDataLastUpdated": "2026-09-01T00:56:30.044Z"
   },
   "tags": [
     "self-hosted-runner",
