@@ -38,14 +38,9 @@ variable "project_name" {
 
 # Optional Variables
 variable "environment" {
-  description = "Environment name (dev, staging, prod)"
+  description = "Environment name for resource tagging and naming"
   type        = string
   default     = "dev"
-
-  validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Environment must be dev, staging, or prod."
-  }
 }
 
 variable "auth_method" {
