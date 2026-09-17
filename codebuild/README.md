@@ -352,7 +352,7 @@ repositories = {
 
 | Variable | Description | Type | Default | Valid Values |
 |----------|-------------|------|---------|--------------|
-| `environment` | Environment name for resource tagging and naming | `string` | `"dev"` | `dev`, `staging`, `prod` |
+| `environment` | Environment name for resource tagging and naming | `string` | `"dev"` | Custom environment name compatible with AWS resource naming rules |
 | `compute_type` | CodeBuild compute instance type | `string` | `"BUILD_GENERAL1_MEDIUM"` | See [Compute Types](#compute-types) |
 | `build_image` | Docker image for the CodeBuild environment | `string` | `"aws/codebuild/standard:7.0"` | Any valid CodeBuild image |
 | `concurrent_build_limit` | Maximum number of concurrent builds allowed | `number` | `20` | 1-100 |
